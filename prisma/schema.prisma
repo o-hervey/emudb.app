@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum Category {
+  EMULATOR
+  FRONTEND
+  OPERATING_SYSTEM
+  COMPATIBILITY_LAYER
+  UTILITY
+  SCRAPER
+  SHADER
+  COMPANION_APP
+  INPUT_CONTROLLERS
+  STREAMING
+}
+
+enum SoftwareStatus {
+  ACTIVE
+  ABANDONED
+  DEPRECATED
+}
+
+enum SystemType {
+  HOME
+  HANDHELD
+  ARCADE
+  COMPUTER
+  OTHER
+}
+
+enum PlatformGroup {
+  WINDOWS
+  MACOS
+  LINUX
+  MOBILE
+  OTHER
+}
+
+enum HardwareType {
+  HANDHELD
+  SBC
+  MODDED_CONSOLE
+  DESKTOP_ARCHITECTURE
+}
+
+enum SubmissionType {
+  NEW_LISTING
+  EDIT
+  NEW_HARDWARE
+  NEW_TAG
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportTargetType {
+  LISTING
+  EDIT
+  RATING
+  COMMENT
+  TAG
+}
+
+enum ReportStatus {
+  PENDING
+  UPHELD
+  DISMISSED
+}
+
+// Profiles table pattern: extends Supabase `auth.users` (do NOT store passwords here)
+model Profile {
+  id                String    @id @db.Uuid @map("id")
+  username          String?   @unique
+  isModerator       Boolean   @default(false) @map("is_moderator")
+  reportCredibility Float     @default(1.0) @map("report_credibility")
+  reportsFiledToday Int       @default(0) @map("reports_filed_today")
+  complaintScore    Float     @default(0.0) @map("complaint_score")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  submittedSoftware Software[]
+  submissions       Submission[]
+  ratings           Rating[]
+  reportsFiled      Report[]  @relation("reports_reporter")
+  reportsReceived   Report[]  @relation("reports_target")
+  submittedTags     Tag[]     @relation("tag_submitted_by")
+  reviewedTags      Tag[]     @relation("tag_reviewed_by")
+
+  @@map("profiles")
+}
+
+model Software {
+  id          String   @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  name        String
+  description String?
+  category    Category
+  approved    Boolean  @default(false)
+  websiteUrl  String?  @map("website_url")
+  downloadUrl String?  @map("download_url")
+  sourceUrl   String?  @map("source_url")
+  status      SoftwareStatus @default(ACTIVE)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @map("updated_at")
+
+  submittedBy String?  @db.Uuid @map("submitted_by")
+  submitter   Profile? @relation(fields: [submittedBy], references: [id])
+
+  systems     SoftwareSystem[]
+  platforms   SoftwarePlatform[]
+  hardware    SoftwareHardware[]
+  tags        SoftwareTag[]
+  ratings     Rating[]
+
+  @@map("software")
+}
+
+model System {
+  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  name        String
+  manufacturer String?
+  type        SystemType
+
+  software    SoftwareSystem[]
+
+  @@map("systems")
+}
+
+model Platform {
+  id    String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  name  String
+  group PlatformGroup
+
+  software SoftwarePlatform[]
+  hardware Hardware[]
+
+  @@map("platforms")
+}
+
+model Hardware {
+  id                String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  name              String
+  manufacturer      String?
+  type              HardwareType
+  primaryPlatformId String? @db.Uuid @map("primary_platform_id")
+  primaryPlatform   Platform? @relation(fields: [primaryPlatformId], references: [id])
+
+  software SoftwareHardware[]
+  ratings Rating[]
+
+  @@map("hardware")
+}
+
+model Tag {
+  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  name        String @unique
+  approved    Boolean @default(false)
+  submittedBy String? @db.Uuid @map("submitted_by")
+  submittedByProfile Profile? @relation("tag_submitted_by", fields: [submittedBy], references: [id])
+  reviewedBy  String? @db.Uuid @map("reviewed_by")
+  reviewedByProfile  Profile? @relation("tag_reviewed_by", fields: [reviewedBy], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  software SoftwareTag[]
+
+  @@map("tags")
+}
+
+// Junction tables
+model SoftwareSystem {
+  softwareId String @db.Uuid @map("software_id")
+  systemId   String @db.Uuid @map("system_id")
+
+  software   Software @relation(fields: [softwareId], references: [id])
+  system     System   @relation(fields: [systemId], references: [id])
+
+  @@id([softwareId, systemId])
+  @@map("software_systems")
+}
+
+model SoftwarePlatform {
+  softwareId String @db.Uuid @map("software_id")
+  platformId String @db.Uuid @map("platform_id")
+
+  software   Software @relation(fields: [softwareId], references: [id])
+  platform   Platform @relation(fields: [platformId], references: [id])
+
+  @@id([softwareId, platformId])
+  @@map("software_platforms")
+}
+
+model SoftwareHardware {
+  softwareId String @db.Uuid @map("software_id")
+  hardwareId String @db.Uuid @map("hardware_id")
+
+  software   Software @relation(fields: [softwareId], references: [id])
+  hardware   Hardware @relation(fields: [hardwareId], references: [id])
+
+  @@id([softwareId, hardwareId])
+  @@map("software_hardware")
+}
+
+model SoftwareTag {
+  softwareId String @db.Uuid @map("software_id")
+  tagId      String @db.Uuid @map("tag_id")
+  approved   Boolean @default(false)
+
+  software   Software @relation(fields: [softwareId], references: [id])
+  tag        Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([softwareId, tagId])
+  @@map("software_tags")
+}
+
+model Rating {
+  id             String  @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  softwareId     String  @db.Uuid @map("software_id")
+  userId         String  @db.Uuid @map("user_id")
+  hardwareId     String? @db.Uuid @map("hardware_id")
+  qualityScore   Int?    @map("quality_score")
+  performanceScore Int?  @map("performance_score")
+  comment        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  software Software @relation(fields: [softwareId], references: [id])
+  user     Profile  @relation(fields: [userId], references: [id])
+  hardware Hardware? @relation(fields: [hardwareId], references: [id])
+
+  @@map("ratings")
+}
+
+model Submission {
+  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  type        SubmissionType
+  submittedBy String @db.Uuid @map("submitted_by")
+  status      SubmissionStatus @default(PENDING)
+  payload     Json
+  targetId    String? @db.Uuid @map("target_id")
+  reviewedBy  String? @db.Uuid @map("reviewed_by")
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  submitter Profile @relation(fields: [submittedBy], references: [id])
+
+  @@map("submissions")
+}
+
+model Report {
+  id             String            @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  reporterId     String            @db.Uuid @map("reporter_id")
+  targetType     ReportTargetType  @map("target_type")
+  targetId       String?           @db.Uuid @map("target_id")
+  reportedUserId String?           @db.Uuid @map("reported_user_id")
+  credibilityWeight Float           @default(1.0) @map("credibility_weight")
+  comment        String?
+  status         ReportStatus      @default(PENDING)
+  upheldAt       DateTime?         @map("upheld_at")
+  reviewedBy     String?           @db.Uuid @map("reviewed_by")
+  reviewedAt     DateTime?         @map("reviewed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  reporter       Profile @relation("reports_reporter", fields: [reporterId], references: [id])
+  targetUser     Profile? @relation("reports_target", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}
