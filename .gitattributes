@@ -1,0 +1,24 @@
+# Normalize line endings
+* text=auto
+
+# TypeScript / TSX — ensure both count as TypeScript
+*.ts  linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# Prisma schema — not detected by default in older Linguist versions
+*.prisma linguist-detectable=true
+
+# CSS — small file count, force detection so it shows up
+*.css linguist-detectable=true
+
+# Generated — excluded from language stats
+package-lock.json               linguist-generated=true
+*.tsbuildinfo                   linguist-generated=true
+prisma/migrations/**            linguist-generated=true
+prisma/migrations/migration_lock.toml linguist-generated=true
+
+# Vendored assets — SVGs in public/ are not source code
+public/**                       linguist-vendored=true
+
+# Documentation — markdown planning docs don't count as code
+*.md                            linguist-documentation=true
