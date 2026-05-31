@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
 
   const page = Math.max(1, parseInt(params.get("page") ?? "1", 10));
+  const sort = params.get("sort");
   const category = params.get("category");
   const status = params.get("status");
   const platformId = params.get("platform");
@@ -62,7 +63,11 @@ export async function GET(req: NextRequest) {
           select: { qualityScore: true, performanceScore: true },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: sort === "recent"
+        ? { createdAt: "desc" as const }
+        : sort === "top_rated"
+        ? { ratings: { _count: "desc" as const } }
+        : { name: "asc" as const },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
