@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { Category, HardwareType, Prisma, SoftwareStatus, SubmissionType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+function isAllowedUrl(val: unknown): boolean {
+  if (typeof val !== "string" || !val) return true; // optional fields — blank is OK
+  try {
+    const { protocol } = new URL(val);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
@@ -37,6 +47,9 @@ async function handleNewListing(userId: string, body: Record<string, unknown>) {
   if (!category || !Object.values(Category).includes(category as Category)) {
     return NextResponse.json({ error: "Valid category is required" }, { status: 400 });
   }
+  if (!isAllowedUrl(websiteUrl))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
+  if (!isAllowedUrl(downloadUrl)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
+  if (!isAllowedUrl(sourceUrl))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
 
   const submission = await prisma.submission.create({
     data: {
@@ -96,6 +109,9 @@ async function handleEdit(userId: string, body: Record<string, unknown>) {
   if (fields.status && !Object.values(SoftwareStatus).includes(fields.status as SoftwareStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
+  if ("websiteUrl" in fields  && !isAllowedUrl(fields.websiteUrl))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
+  if ("downloadUrl" in fields && !isAllowedUrl(fields.downloadUrl)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
+  if ("sourceUrl" in fields   && !isAllowedUrl(fields.sourceUrl))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
 
   const submission = await prisma.submission.create({
     data: {
