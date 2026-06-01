@@ -1,6 +1,6 @@
 # EmuDB.app
 
-A centralised software library for everything emulation-related.
+A community-driven, filterable directory of emulation software, covering emulators, frontends, operating systems, tools, platforms, hardware compatibility, and user ratings.
 
 ## Why use EmuDB.app?
 
@@ -16,7 +16,7 @@ This is the EmuDB.app codebase. At the time of writing, EmuDB.app is maintained 
 
 ## Stack
 
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Database:** PostgreSQL via Supabase
 - **ORM:** Prisma 7
 - **Auth:** Supabase Auth
@@ -46,6 +46,8 @@ cp .env.example .env.local
 ```bash
 npx prisma migrate dev
 ```
+
+Run this again after pulling changes that include new Prisma migrations.
 
 5. Seed the database
 ```bash
