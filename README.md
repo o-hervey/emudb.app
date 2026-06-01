@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./emudb_horizontal_logo_dark.png" />
-    <source media="(prefers-color-scheme: light)" srcset="./emudb_horizontal_logo_light.png" />
-    <img src="./emudb_horizontal_logo_light.png" width="600" alt="EmuDB.app logo" />
+    <source media="(prefers-color-scheme: dark)" srcset="./.github/emudb_horizontal_logo_dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="./.github/emudb_horizontal_logo_light.png" />
+    <img src="./.github/emudb_horizontal_logo_light.png" width="600" alt="EmuDB.app logo" />
   </picture>
 </p>
 
