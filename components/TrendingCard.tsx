@@ -36,7 +36,7 @@ export function TrendingCard({ software }: { software: SoftwareListing }) {
       className="group flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 w-44 shrink-0 hover:border-[var(--color-accent)] hover:shadow-md transition-all"
     >
       <div
-        className="relative flex items-center justify-center rounded-xl text-white text-xl font-bold overflow-hidden"
+        className="flex items-center justify-center rounded-xl text-white text-xl font-bold overflow-hidden"
         style={{ height: 72, backgroundColor: faviconSrc ? `${color}22` : color }}
         aria-hidden="true"
       >
@@ -44,9 +44,10 @@ export function TrendingCard({ software }: { software: SoftwareListing }) {
           <Image
             src={faviconSrc}
             alt=""
-            fill
+            width={64}
+            height={64}
             onError={() => setFaviconFailed(true)}
-            className="object-contain p-3"
+            className="object-contain"
           />
         ) : initials}
       </div>
