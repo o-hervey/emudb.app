@@ -1,3 +1,11 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./emudb_horizontal_logo_dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="./emudb_horizontal_logo_light.png" />
+    <img src="./emudb_horizontal_logo_light.png" width="600" alt="EmuDB.app logo" />
+  </picture>
+</p>
+
 # emudb.app
 
 A community-driven, filterable directory of emulation software, covering emulators, frontends, operating systems, tools, platforms, hardware compatibility, and user ratings.
