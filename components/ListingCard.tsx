@@ -1,26 +1,8 @@
 import Link from 'next/link';
 import type { SoftwareListing } from '@/types';
-import { CategoryBadge, CATEGORY_ICON_COLORS } from './CategoryBadge';
+import { CategoryBadge } from './CategoryBadge';
+import { SoftwareIcon } from './SoftwareIcon';
 import { StarRating } from './StarRating';
-
-function SoftwareIcon({ name, category }: { name: string; category: string }) {
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-  const color = CATEGORY_ICON_COLORS[category] ?? '#8868F0';
-
-  return (
-    <div
-      className="flex items-center justify-center rounded-lg text-white text-sm font-bold shrink-0"
-      style={{ width: 40, height: 40, backgroundColor: color }}
-      aria-hidden="true"
-    >
-      {initials}
-    </div>
-  );
-}
 
 export function ListingCard({ software }: { software: SoftwareListing }) {
   return (
@@ -29,7 +11,7 @@ export function ListingCard({ software }: { software: SoftwareListing }) {
       className="group flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm hover:border-[var(--color-accent)] hover:shadow-md transition-all"
     >
       <div className="flex items-start gap-3">
-        <SoftwareIcon name={software.name} category={software.category} />
+        <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-[var(--color-text)] text-sm leading-snug line-clamp-1 group-hover:text-[var(--color-accent)] transition-colors">
             {software.name}

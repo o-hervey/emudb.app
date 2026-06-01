@@ -2,8 +2,9 @@
 
 import { AnonymousCTA } from '@/components/AnonymousCTA';
 import { useAuth } from '@/components/AuthContext';
-import { CategoryBadge, CATEGORY_ICON_COLORS } from '@/components/CategoryBadge';
+import { CategoryBadge } from '@/components/CategoryBadge';
 import { SidebarSection } from '@/components/SidebarSection';
+import { SoftwareIcon } from '@/components/SoftwareIcon';
 import { StarBreakdown, StarInput, StarRating } from '@/components/StarRating';
 import type { Rating, SoftwareDetail, SoftwareListing } from '@/types';
 import Link from 'next/link';
@@ -23,19 +24,6 @@ const STATUS_CLASSES: Record<string, string> = {
 
 type TabKey = 'overview' | 'platforms' | 'systems';
 
-function SoftwareIcon({ name, category, size = 56 }: { name: string; category: string; size?: number }) {
-  const initials = name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-  const color = CATEGORY_ICON_COLORS[category] ?? '#8868F0';
-  return (
-    <div
-      className="flex items-center justify-center rounded-2xl text-white font-bold shrink-0"
-      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.3 }}
-      aria-hidden="true"
-    >
-      {initials}
-    </div>
-  );
-}
 
 function ExternalLink({ href, label }: { href: string; label: string }) {
   return (
@@ -56,20 +44,12 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
 }
 
 function SimilarItem({ software }: { software: SoftwareListing }) {
-  const color = CATEGORY_ICON_COLORS[software.category] ?? '#8868F0';
-  const initials = software.name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
   return (
     <Link
       href={`/software/${software.id}`}
       className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-[var(--color-surface-raised)] transition-colors"
     >
-      <div
-        className="flex items-center justify-center rounded-lg text-white text-xs font-bold shrink-0"
-        style={{ width: 32, height: 32, backgroundColor: color }}
-        aria-hidden="true"
-      >
-        {initials}
-      </div>
+      <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} size={32} />
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text)] line-clamp-1">{software.name}</p>
         <CategoryBadge category={software.category} />
@@ -289,7 +269,7 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
           {/* Software header */}
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 mb-6">
             <div className="flex items-start gap-5">
-              <SoftwareIcon name={software.name} category={software.category} size={64} />
+              <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} size={64} rounded="2xl" />
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h1 className="text-2xl font-bold text-[var(--color-text)]">{software.name}</h1>
