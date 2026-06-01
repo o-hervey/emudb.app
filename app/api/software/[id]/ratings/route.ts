@@ -49,6 +49,10 @@ export async function POST(
       { status: 400 }
     );
   }
+  if (hardwareId && typeof hardwareId !== "string") {
+    return NextResponse.json({ error: "hardwareId must be a string" }, { status: 400 });
+  }
+  const normalizedHardwareId = typeof hardwareId === "string" && hardwareId ? hardwareId : null;
 
   const software = await prisma.software.findUnique({
     where: { id: softwareId, approved: true },
@@ -58,25 +62,28 @@ export async function POST(
     return NextResponse.json({ error: "Software listing not found" }, { status: 404 });
   }
 
-  if (hardwareId) {
-    const hardware = await prisma.hardware.findUnique({
-      where: { id: hardwareId as string },
-      select: { id: true },
+  if (normalizedHardwareId) {
+    const supportedHardware = await prisma.softwareHardware.findUnique({
+      where: {
+        softwareId_hardwareId: {
+          softwareId,
+          hardwareId: normalizedHardwareId,
+        },
+      },
+      select: { hardwareId: true },
     });
-    if (!hardware) {
-      return NextResponse.json({ error: "Hardware not found" }, { status: 404 });
+    if (!supportedHardware) {
+      return NextResponse.json(
+        { error: "Hardware is not associated with this software listing" },
+        { status: 400 }
+      );
     }
   }
-
-  const existing = await prisma.rating.findFirst({
-    where: { softwareId, userId: user.id },
-    select: { id: true },
-  });
 
   const data = {
     qualityScore: hasQuality ? (qualityScore as number) : null,
     performanceScore: hasPerformance ? (performanceScore as number) : null,
-    hardwareId: hardwareId ? (hardwareId as string) : null,
+    hardwareId: normalizedHardwareId,
     comment: typeof comment === "string" ? comment.trim() || null : null,
   };
 
@@ -89,14 +96,11 @@ export async function POST(
     createdAt: true,
   };
 
-  if (existing) {
-    const rating = await prisma.rating.update({ where: { id: existing.id }, data, select });
-    return NextResponse.json(rating, { status: 200 });
-  }
-
-  const rating = await prisma.rating.create({
-    data: { softwareId, userId: user.id, ...data },
+  const rating = await prisma.rating.upsert({
+    where: { softwareId_userId: { softwareId, userId: user.id } },
+    create: { softwareId, userId: user.id, ...data },
+    update: data,
     select,
   });
-  return NextResponse.json(rating, { status: 201 });
+  return NextResponse.json(rating);
 }

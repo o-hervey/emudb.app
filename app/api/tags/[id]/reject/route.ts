@@ -3,49 +3,69 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, error } = await requireContributor();
   if (error) return error;
 
   const { id } = await params;
+  const body = await req.json().catch(() => null);
+  const submissionId = body && typeof body.submissionId === "string"
+    ? body.submissionId
+    : null;
 
-  const tag = await prisma.tag.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      approved: true,
-      submittedBy: true,
-      software: { select: { softwareId: true, approved: true } },
-    },
+  if (!submissionId) {
+    return NextResponse.json({ error: "submissionId is required" }, { status: 400 });
+  }
+
+  const submission = await prisma.submission.findFirst({
+    where: { id: submissionId, type: "NEW_TAG", status: "PENDING" },
+    select: { id: true, payload: true, targetId: true, submittedBy: true },
   });
 
-  if (!tag) {
-    return NextResponse.json({ error: "Tag not found" }, { status: 404 });
+  if (!submission) {
+    return NextResponse.json({ error: "Pending tag submission not found" }, { status: 404 });
   }
-  if (tag.approved) {
-    return NextResponse.json({ error: "Tag is already approved" }, { status: 409 });
+
+  const payload = submission.payload as Record<string, unknown>;
+  const payloadTagId = typeof payload.tagId === "string" ? payload.tagId : null;
+  const softwareId = typeof payload.softwareId === "string" ? payload.softwareId : submission.targetId;
+
+  if (payloadTagId !== id || !softwareId) {
+    return NextResponse.json({ error: "Submission does not match this tag" }, { status: 400 });
   }
-  if (tag.submittedBy === user!.id) {
+
+  if (submission.submittedBy === user!.id) {
     return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
   }
 
-  const approvedJunctions = tag.software.filter((s) => s.approved);
+  const tag = await prisma.tag.findUnique({
+    where: { id },
+    select: { id: true, approved: true },
+  });
+  if (!tag) {
+    return NextResponse.json({ error: "Tag not found" }, { status: 404 });
+  }
 
   await prisma.$transaction(async (tx) => {
-    // Remove all pending junction rows for this tag.
-    await tx.softwareTag.deleteMany({ where: { tagId: id, approved: false } });
+    await tx.softwareTag.deleteMany({
+      where: { softwareId, tagId: id, approved: false },
+    });
+    await tx.submission.updateMany({
+      where: {
+        type: "NEW_TAG",
+        status: "PENDING",
+        targetId: softwareId,
+        payload: { path: ["tagId"], equals: id },
+      },
+      data: { status: "REJECTED", reviewedBy: user!.id, reviewedAt: new Date() },
+    });
 
-    if (approvedJunctions.length === 0) {
-      // No approved usages remain — delete the tag entirely.
+    const remainingJunctions = await tx.softwareTag.count({ where: { tagId: id } });
+
+    if (!tag.approved && remainingJunctions === 0) {
       await tx.tag.delete({ where: { id } });
-    } else {
-      // The tag has approved usages on other listings; just mark reviewed.
-      await tx.tag.update({
-        where: { id },
-        data: { reviewedBy: user!.id },
-      });
     }
   });
 

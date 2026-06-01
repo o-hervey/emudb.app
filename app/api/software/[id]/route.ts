@@ -53,8 +53,17 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const qualityRatings = software.ratings.filter((r) => r.qualityScore !== null);
-  const perfRatings = software.ratings.filter((r) => r.performanceScore !== null);
+  const [qualityAggregate, performanceAggregate, ratingCount] = await Promise.all([
+    prisma.rating.aggregate({
+      where: { softwareId: id, qualityScore: { not: null } },
+      _avg: { qualityScore: true },
+    }),
+    prisma.rating.aggregate({
+      where: { softwareId: id, performanceScore: { not: null } },
+      _avg: { performanceScore: true },
+    }),
+    prisma.rating.count({ where: { softwareId: id } }),
+  ]);
 
   return NextResponse.json({
     ...software,
@@ -62,12 +71,8 @@ export async function GET(
     systems: software.systems.map((p) => p.system),
     hardware: software.hardware.map((p) => p.hardware),
     tags: software.tags.map((p) => p.tag),
-    avgQuality: qualityRatings.length > 0
-      ? qualityRatings.reduce((s, r) => s + r.qualityScore!, 0) / qualityRatings.length
-      : null,
-    avgPerformance: perfRatings.length > 0
-      ? perfRatings.reduce((s, r) => s + r.performanceScore!, 0) / perfRatings.length
-      : null,
-    ratingCount: software.ratings.length,
+    avgQuality: qualityAggregate._avg.qualityScore,
+    avgPerformance: performanceAggregate._avg.performanceScore,
+    ratingCount,
   });
 }

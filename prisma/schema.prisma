@@ -233,6 +233,7 @@ model Rating {
   user     Profile  @relation(fields: [userId], references: [id])
   hardware Hardware? @relation(fields: [hardwareId], references: [id])
 
+  @@unique([softwareId, userId])
   @@map("ratings")
 }
 

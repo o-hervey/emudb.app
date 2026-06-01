@@ -3,39 +3,78 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, error } = await requireContributor();
   if (error) return error;
 
   const { id } = await params;
+  const body = await req.json().catch(() => null);
+  const submissionId = body && typeof body.submissionId === "string"
+    ? body.submissionId
+    : null;
 
-  const tag = await prisma.tag.findUnique({
-    where: { id },
-    select: { id: true, approved: true, submittedBy: true },
+  if (!submissionId) {
+    return NextResponse.json({ error: "submissionId is required" }, { status: 400 });
+  }
+
+  const submission = await prisma.submission.findFirst({
+    where: { id: submissionId, type: "NEW_TAG", status: "PENDING" },
+    select: { id: true, payload: true, targetId: true, submittedBy: true },
   });
 
-  if (!tag) {
-    return NextResponse.json({ error: "Tag not found" }, { status: 404 });
+  if (!submission) {
+    return NextResponse.json({ error: "Pending tag submission not found" }, { status: 404 });
   }
-  if (tag.approved) {
-    return NextResponse.json({ error: "Tag is already approved" }, { status: 409 });
+
+  const payload = submission.payload as Record<string, unknown>;
+  const payloadTagId = typeof payload.tagId === "string" ? payload.tagId : null;
+  const softwareId = typeof payload.softwareId === "string" ? payload.softwareId : submission.targetId;
+
+  if (payloadTagId !== id || !softwareId) {
+    return NextResponse.json({ error: "Submission does not match this tag" }, { status: 400 });
   }
-  if (tag.submittedBy === user!.id) {
+
+  if (submission.submittedBy === user!.id) {
     return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
   }
 
-  await prisma.$transaction([
-    prisma.tag.update({
+  const tag = await prisma.tag.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!tag) {
+    return NextResponse.json({ error: "Tag not found" }, { status: 404 });
+  }
+
+  const junction = await prisma.softwareTag.findUnique({
+    where: { softwareId_tagId: { softwareId, tagId: id } },
+    select: { softwareId: true },
+  });
+  if (!junction) {
+    return NextResponse.json({ error: "Tag is not attached to this listing" }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.tag.update({
       where: { id },
       data: { approved: true, reviewedBy: user!.id },
-    }),
-    prisma.softwareTag.updateMany({
-      where: { tagId: id, approved: false },
+    });
+    await tx.softwareTag.update({
+      where: { softwareId_tagId: { softwareId, tagId: id } },
       data: { approved: true },
-    }),
-  ]);
+    });
+    await tx.submission.updateMany({
+      where: {
+        type: "NEW_TAG",
+        status: "PENDING",
+        targetId: softwareId,
+        payload: { path: ["tagId"], equals: id },
+      },
+      data: { status: "APPROVED", reviewedBy: user!.id, reviewedAt: new Date() },
+    });
+  });
 
   return NextResponse.json({ ok: true });
 }

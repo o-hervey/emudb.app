@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 
 interface PendingTag {
   id: string;
+  tagId: string;
+  softwareId: string;
   name: string;
   createdAt: string;
   submittedByProfile: { id: string; username: string | null } | null;
@@ -53,10 +55,14 @@ export default function TagReviewPage() {
     if (user) fetchTags();
   }, [user]);
 
-  async function action(tagId: string, verb: 'approve' | 'reject') {
-    setActioning(tagId);
+  async function action(tag: PendingTag, verb: 'approve' | 'reject') {
+    setActioning(tag.id);
     try {
-      const res = await fetch(`/api/tags/${tagId}/${verb}`, { method: 'POST' });
+      const res = await fetch(`/api/tags/${tag.tagId}/${verb}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: tag.id }),
+      });
       if (!res.ok) {
         const data = await res.json();
         alert(data.error ?? 'Action failed');
@@ -126,7 +132,7 @@ export default function TagReviewPage() {
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button
-                      onClick={() => action(tag.id, 'approve')}
+                      onClick={() => action(tag, 'approve')}
                       disabled={actioning === tag.id || isOwn}
                       title={isOwn ? "Can't review your own submission" : undefined}
                       className="px-3 py-1.5 rounded bg-green-700 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -134,7 +140,7 @@ export default function TagReviewPage() {
                       Approve
                     </button>
                     <button
-                      onClick={() => action(tag.id, 'reject')}
+                      onClick={() => action(tag, 'reject')}
                       disabled={actioning === tag.id || isOwn}
                       title={isOwn ? "Can't review your own submission" : undefined}
                       className="px-3 py-1.5 rounded bg-zinc-700 text-xs font-medium text-zinc-200 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

@@ -3,8 +3,37 @@ import { prisma } from "@/lib/prisma";
 import { Category, HardwareType, Prisma, SoftwareStatus, SubmissionType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+type Normalized<T> = { value: T; error?: never } | { error: NextResponse; value?: never };
+
+function badRequest(error: string) {
+  return NextResponse.json({ error }, { status: 400 });
+}
+
+function isUuid(val: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+}
+
+function normalizeOptionalString(val: unknown, field: string): Normalized<string | null> {
+  if (val === undefined || val === null || val === "") return { value: null };
+  if (typeof val !== "string") return { error: badRequest(`${field} must be a string`) };
+  return { value: val.trim() || null };
+}
+
+function normalizeIdList(val: unknown, field: string): Normalized<string[]> {
+  if (val === undefined || val === null) return { value: [] };
+  if (!Array.isArray(val)) return { error: badRequest(`${field} must be an array`) };
+
+  const ids = val.map((id) => typeof id === "string" ? id.trim() : "");
+  if (ids.some((id) => !isUuid(id))) {
+    return { error: badRequest(`${field} must only contain UUID strings`) };
+  }
+
+  return { value: [...new Set(ids)] };
+}
+
 function isAllowedUrl(val: unknown): boolean {
-  if (typeof val !== "string" || !val) return true; // optional fields — blank is OK
+  if (val === null) return true;
+  if (typeof val !== "string" || !val) return false;
   try {
     const { protocol } = new URL(val);
     return protocol === "http:" || protocol === "https:";
@@ -38,7 +67,7 @@ export async function POST(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 async function handleNewListing(userId: string, body: Record<string, unknown>) {
-  const { name, description, category, websiteUrl, downloadUrl, sourceUrl,
+  const { name, description, category, status, websiteUrl, downloadUrl, sourceUrl,
           systemIds, platformIds, hardwareIds } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
@@ -47,9 +76,50 @@ async function handleNewListing(userId: string, body: Record<string, unknown>) {
   if (!category || !Object.values(Category).includes(category as Category)) {
     return NextResponse.json({ error: "Valid category is required" }, { status: 400 });
   }
-  if (!isAllowedUrl(websiteUrl))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
-  if (!isAllowedUrl(downloadUrl)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
-  if (!isAllowedUrl(sourceUrl))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
+
+  const listingStatus = status === undefined || status === null || status === ""
+    ? SoftwareStatus.ACTIVE
+    : status;
+  if (!Object.values(SoftwareStatus).includes(listingStatus as SoftwareStatus)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+  const normalizedStatus = listingStatus as SoftwareStatus;
+
+  const normalizedDescription = normalizeOptionalString(description, "description");
+  if (normalizedDescription.error) return normalizedDescription.error;
+  const normalizedWebsiteUrl = normalizeOptionalString(websiteUrl, "websiteUrl");
+  if (normalizedWebsiteUrl.error) return normalizedWebsiteUrl.error;
+  const normalizedDownloadUrl = normalizeOptionalString(downloadUrl, "downloadUrl");
+  if (normalizedDownloadUrl.error) return normalizedDownloadUrl.error;
+  const normalizedSourceUrl = normalizeOptionalString(sourceUrl, "sourceUrl");
+  if (normalizedSourceUrl.error) return normalizedSourceUrl.error;
+
+  if (!isAllowedUrl(normalizedWebsiteUrl.value))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
+  if (!isAllowedUrl(normalizedDownloadUrl.value)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
+  if (!isAllowedUrl(normalizedSourceUrl.value))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
+
+  const normalizedSystemIds = normalizeIdList(systemIds, "systemIds");
+  if (normalizedSystemIds.error) return normalizedSystemIds.error;
+  const normalizedPlatformIds = normalizeIdList(platformIds, "platformIds");
+  if (normalizedPlatformIds.error) return normalizedPlatformIds.error;
+  const normalizedHardwareIds = normalizeIdList(hardwareIds, "hardwareIds");
+  if (normalizedHardwareIds.error) return normalizedHardwareIds.error;
+
+  const [systemCount, platformCount, hardwareCount] = await Promise.all([
+    normalizedSystemIds.value.length === 0
+      ? 0
+      : prisma.system.count({ where: { id: { in: normalizedSystemIds.value } } }),
+    normalizedPlatformIds.value.length === 0
+      ? 0
+      : prisma.platform.count({ where: { id: { in: normalizedPlatformIds.value } } }),
+    normalizedHardwareIds.value.length === 0
+      ? 0
+      : prisma.hardware.count({ where: { id: { in: normalizedHardwareIds.value } } }),
+  ]);
+
+  if (systemCount !== normalizedSystemIds.value.length) return NextResponse.json({ error: "One or more systems were not found" }, { status: 400 });
+  if (platformCount !== normalizedPlatformIds.value.length) return NextResponse.json({ error: "One or more platforms were not found" }, { status: 400 });
+  if (hardwareCount !== normalizedHardwareIds.value.length) return NextResponse.json({ error: "One or more hardware entries were not found" }, { status: 400 });
 
   const submission = await prisma.submission.create({
     data: {
@@ -58,14 +128,15 @@ async function handleNewListing(userId: string, body: Record<string, unknown>) {
       status: "PENDING",
       payload: {
         name: (name as string).trim(),
-        description: description ?? null,
-        category,
-        websiteUrl: websiteUrl ?? null,
-        downloadUrl: downloadUrl ?? null,
-        sourceUrl: sourceUrl ?? null,
-        systemIds: Array.isArray(systemIds) ? systemIds : [],
-        platformIds: Array.isArray(platformIds) ? platformIds : [],
-        hardwareIds: Array.isArray(hardwareIds) ? hardwareIds : [],
+        description: normalizedDescription.value,
+        category: category as Category,
+        status: normalizedStatus,
+        websiteUrl: normalizedWebsiteUrl.value,
+        downloadUrl: normalizedDownloadUrl.value,
+        sourceUrl: normalizedSourceUrl.value,
+        systemIds: normalizedSystemIds.value,
+        platformIds: normalizedPlatformIds.value,
+        hardwareIds: normalizedHardwareIds.value,
       },
     },
     select: { id: true, type: true, status: true, createdAt: true },
@@ -82,6 +153,9 @@ async function handleEdit(userId: string, body: Record<string, unknown>) {
   if (!targetId || typeof targetId !== "string") {
     return NextResponse.json({ error: "targetId is required for EDIT submissions" }, { status: 400 });
   }
+  if (!isUuid(targetId)) {
+    return NextResponse.json({ error: "targetId must be a UUID string" }, { status: 400 });
+  }
 
   const software = await prisma.software.findUnique({
     where: { id: targetId, approved: true },
@@ -96,17 +170,32 @@ async function handleEdit(userId: string, body: Record<string, unknown>) {
   }
 
   const EDITABLE_FIELDS = ["name", "description", "category", "status", "websiteUrl", "downloadUrl", "sourceUrl"];
-  const fields = Object.fromEntries(
-    Object.entries(payload as Record<string, unknown>).filter(([k]) => EDITABLE_FIELDS.includes(k))
-  );
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload as Record<string, unknown>)) {
+    if (!EDITABLE_FIELDS.includes(key)) continue;
+
+    if (key === "name") {
+      if (typeof value !== "string" || !value.trim()) return badRequest("name must be a non-empty string");
+      fields.name = value.trim();
+      continue;
+    }
+    if (key === "description" || key === "websiteUrl" || key === "downloadUrl" || key === "sourceUrl") {
+      const normalized = normalizeOptionalString(value, key);
+      if (normalized.error) return normalized.error;
+      fields[key] = normalized.value;
+      continue;
+    }
+
+    fields[key] = value;
+  }
 
   if (Object.keys(fields).length === 0) {
     return NextResponse.json({ error: "No editable fields provided" }, { status: 400 });
   }
-  if (fields.category && !Object.values(Category).includes(fields.category as Category)) {
+  if ("category" in fields && !Object.values(Category).includes(fields.category as Category)) {
     return NextResponse.json({ error: "Invalid category" }, { status: 400 });
   }
-  if (fields.status && !Object.values(SoftwareStatus).includes(fields.status as SoftwareStatus)) {
+  if ("status" in fields && !Object.values(SoftwareStatus).includes(fields.status as SoftwareStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
   if ("websiteUrl" in fields  && !isAllowedUrl(fields.websiteUrl))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
@@ -139,6 +228,22 @@ async function handleNewHardware(userId: string, body: Record<string, unknown>) 
     return NextResponse.json({ error: "Valid hardwareType is required" }, { status: 400 });
   }
 
+  const normalizedManufacturer = normalizeOptionalString(manufacturer, "manufacturer");
+  if (normalizedManufacturer.error) return normalizedManufacturer.error;
+
+  const platformId = normalizeOptionalString(primaryPlatformId, "primaryPlatformId");
+  if (platformId.error) return platformId.error;
+  if (platformId.value && !isUuid(platformId.value)) {
+    return NextResponse.json({ error: "primaryPlatformId must be a UUID string" }, { status: 400 });
+  }
+  if (platformId.value) {
+    const platform = await prisma.platform.findUnique({
+      where: { id: platformId.value },
+      select: { id: true },
+    });
+    if (!platform) return NextResponse.json({ error: "Platform not found" }, { status: 404 });
+  }
+
   const submission = await prisma.submission.create({
     data: {
       type: "NEW_HARDWARE",
@@ -146,9 +251,9 @@ async function handleNewHardware(userId: string, body: Record<string, unknown>) 
       status: "PENDING",
       payload: {
         name: (name as string).trim(),
-        manufacturer: manufacturer ?? null,
-        hardwareType,
-        primaryPlatformId: primaryPlatformId ?? null,
+        manufacturer: normalizedManufacturer.value,
+        hardwareType: hardwareType as HardwareType,
+        primaryPlatformId: platformId.value,
       },
     },
     select: { id: true, type: true, status: true, createdAt: true },
@@ -164,6 +269,9 @@ async function handleNewTag(userId: string, body: Record<string, unknown>) {
 
   if (!softwareId || typeof softwareId !== "string") {
     return NextResponse.json({ error: "softwareId is required" }, { status: 400 });
+  }
+  if (!isUuid(softwareId)) {
+    return NextResponse.json({ error: "softwareId must be a UUID string" }, { status: 400 });
   }
   if (!tagName || typeof tagName !== "string" || !tagName.trim()) {
     return NextResponse.json({ error: "tagName is required" }, { status: 400 });

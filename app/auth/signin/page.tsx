@@ -5,6 +5,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
+function safeNextPath(next: string | null) {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/';
+
+  try {
+    const url = new URL(next, 'https://emudb.local');
+    if (url.origin !== 'https://emudb.local') return '/';
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return '/';
+  }
+}
+
 function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +25,7 @@ function SignInForm() {
   const { refresh } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') ?? '/';
+  const next = safeNextPath(searchParams.get('next'));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
