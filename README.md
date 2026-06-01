@@ -1,72 +1,45 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./.github/emudb_horizontal_logo_dark.png" />
-    <source media="(prefers-color-scheme: light)" srcset="./.github/emudb_horizontal_logo_light.png" />
-    <img src="./.github/emudb_horizontal_logo_light.png" width="600" alt="EmuDB.app logo" />
+    <source media="(prefers-color-scheme: dark)" srcset="./public/emudb_horizontal_logo_dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="./public/emudb_horizontal_logo_light.png" />
+    <img src="./public/emudb_horizontal_logo_light.png" width="560" alt="EmuDB" />
   </picture>
 </p>
 
-# emudb.app
+<p align="center">A community-driven directory of emulation software.</p>
 
-A community-driven, filterable directory of emulation software, covering emulators, frontends, operating systems, tools, platforms, hardware compatibility, and user ratings.
+---
 
-## Disclaimer
+Emulation resources are scattered. Answers to basic questions — which emulator handles PS2 well on a Steam Deck, which frontend works on muOS, what are the dual-screen launcher options for Android — are buried across YouTube guides, Reddit threads, and Discord servers.
 
-emudb.app has not yet been deployed or published, and is still actively under development.
-
-## Why use EmuDB.app?
-
-Emulation resources are famously disparate and hard to conveniently find. Like me, you've no doubt found yourself scouring countless YouTube guides, Reddit threads, and Discord groups only to still not find a solid answer to questions such as "Which Dreamcast emulator runs best on muOS?" or "What dual-screen launcher options are currently available for Android, and which one should I try?" We've all been there.
-
-EmuDB.app is the answer. A single, filterable directory of emulators, frontends, operating systems, utilities, and everything else you might need — covering Android, Linux, Windows, dedicated handhelds, modded consoles, and more. Every listing links directly to the official source. No guides, no noise, just the software.
-
-What sets EmuDB.app apart is its rating system. Ratings are split between overall software quality and hardware-specific performance — so you can see not just whether something is good, but whether it runs well on your exact device. A community of contributors submit new listings, rate software, and leave hardware-specific performance reports, so anyone can find a quick and reliable answer to any emulation question.
-
-## What is this repository?
-
-This is the EmuDB.app codebase. At the time of writing, EmuDB.app is maintained by a single person. Any skilled and willing contributors would be greatly appreciated — whether that's code, bug reports, or simply submitting listings through the site itself.
+EmuDB is a filterable directory of emulators, frontends, operating systems, utilities, scrapers, shaders, and everything adjacent. Every listing links directly to the official source. Ratings are split between overall software quality and hardware-specific performance, so you can see not just whether something is generally well-regarded, but whether it runs well on your exact device.
 
 ## Stack
 
-- **Framework:** Next.js 16 (App Router)
-- **Database:** PostgreSQL via Supabase
-- **ORM:** Prisma 7
-- **Auth:** Supabase Auth
-- **Hosting:** Vercel
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Database | PostgreSQL via Supabase |
+| ORM | Prisma 7 |
+| Auth | Supabase Auth |
+| Hosting | Vercel |
 
 ## Running locally
 
 **Prerequisites:** Node.js 22+, a Supabase project
 
-1. Clone the repo
 ```bash
 git clone https://github.com/o-hervey/emudb.app.git
 cd emudb.app
-```
-
-2. Install dependencies
-```bash
 npm install
-```
-
-3. Copy `.env.example` to `.env.local` and fill in your Supabase credentials
-```bash
-cp .env.example .env.local
-```
-
-4. Run the database migration
-```bash
+cp .env.example .env.local   # fill in your Supabase credentials
 npx prisma migrate dev
-```
-
-Run this again after pulling changes that include new Prisma migrations.
-
-5. Seed the database
-```bash
 npx prisma db seed
+npm run dev
 ```
 
-6. Run the auth trigger in your Supabase SQL editor
+**One-time Supabase setup** — run this in your project's SQL editor to create the profile row on signup:
+
 ```sql
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -82,14 +55,9 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 ```
 
-7. Start the development server
-```bash
-npm run dev
-```
-
 ## Contributing
 
-Pull requests are welcome. If you've found a bug or have a feature in mind, open an issue and we can discuss it. To contribute listings, ratings, or tags, use the site itself — that's what it's for.
+Contributions to the codebase are welcome — open an issue before starting anything substantial. To contribute listings, ratings, or tags, use the site itself.
 
 ## License
 

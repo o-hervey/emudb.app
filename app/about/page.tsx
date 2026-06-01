@@ -25,22 +25,24 @@ export default function AboutPage() {
         <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">What is EmuDB?</h2>
         <div className="space-y-4 text-[var(--color-text-muted)] leading-relaxed">
           <p>
-            Emulation resources are scattered. Answers to basic questions — which emulator handles PS2 well
-            on a Steam Deck, which frontend works on muOS, what are the dual-screen launcher options for
-            Android — are buried across YouTube guides, Reddit threads, and Discord servers. Getting a
-            reliable answer takes longer than it should.
+            You know the drill. You pick up a new handheld, or finally get around to setting up a front-end,
+            or want to know if a particular emulator has improved recently — and you spend an hour
+            piecing together an answer from a three-year-old Reddit thread, a YouTube video that
+            buries the point, and a Discord server where the question was already asked but never
+            really answered.
           </p>
           <p>
-            EmuDB is a filterable directory of emulation software. Emulators, frontends, operating systems,
-            utilities, scrapers, shaders — if it{"'"}s relevant to running software on hardware it wasn{"'"}t
-            designed for, it belongs here. Every listing links directly to the official source. No guides,
-            no ROMs, no noise.
+            EmuDB exists to short-circuit that. It{"'"}s a single place to look up emulation software —
+            emulators, frontends, operating systems, utilities, scrapers, shaders — filter by the system
+            you{"'"}re targeting or the hardware you{"'"}re running it on, and go straight to the official
+            source. No guides, no ROMs, no noise.
           </p>
           <p>
-            What makes it more than a list is the rating system. Ratings are split: overall software quality
-            is one score, hardware-specific performance is another. So you can see not just whether something
-            is generally well-regarded, but whether it runs well on your specific device. The more people
-            contribute, the more useful it gets for everyone.
+            The part that makes it actually useful over time is the rating system. There are two scores:
+            one for overall software quality, one for performance on specific hardware. So if you{"'"}re
+            running a Steam Deck or a particular Android device, you can see how something performs
+            on that exact setup — not just whether it{"'"}s generally well-regarded. The more people
+            rate and review, the more accurate and useful that picture becomes.
           </p>
         </div>
       </section>
