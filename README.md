@@ -1,6 +1,10 @@
-# EmuDB.app
+# emudb.app
 
 A community-driven, filterable directory of emulation software, covering emulators, frontends, operating systems, tools, platforms, hardware compatibility, and user ratings.
+
+## Disclaimer
+
+emudb.app has not yet been deployed or published, and is still actively under development.
 
 ## Why use EmuDB.app?
 
