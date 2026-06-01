@@ -96,11 +96,14 @@ export async function POST(
     createdAt: true,
   };
 
-  const rating = await prisma.rating.upsert({
-    where: { softwareId_userId: { softwareId, userId: user.id } },
-    create: { softwareId, userId: user.id, ...data },
-    update: data,
-    select,
+  const existing = await prisma.rating.findFirst({
+    where: { softwareId, userId: user.id },
+    select: { id: true },
   });
+
+  const rating = existing
+    ? await prisma.rating.update({ where: { id: existing.id }, data, select })
+    : await prisma.rating.create({ data: { softwareId, userId: user.id, ...data }, select });
+
   return NextResponse.json(rating);
 }

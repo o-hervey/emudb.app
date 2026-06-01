@@ -1,12 +1,22 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
+import { ThemeToggle } from './ThemeToggle';
+
+const NAV_LINKS = [
+  { label: 'Browse',      href: '/browse' },
+  { label: 'Categories',  href: '/categories' },
+  { label: 'Systems',     href: '/systems' },
+  { label: 'Contribute',  href: '/submit' },
+];
 
 export function Header() {
   const { user, loading, refresh } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   async function signOut() {
     await fetch('/api/auth/signout', { method: 'POST' });
@@ -15,53 +25,95 @@ export function Header() {
   }
 
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-40">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 flex h-14 items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-base font-bold tracking-tight text-zinc-100 hover:text-white">
-            EmuDB
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-zinc-400">
-            <Link href="/browse" className="hover:text-zinc-100 transition-colors">Browse</Link>
-            <Link href="/submit" className="hover:text-zinc-100 transition-colors">Submit</Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 flex h-16 items-center justify-between gap-6">
+
+        {/* Logo */}
+        <Link href="/" className="shrink-0">
+          <Image
+            src="/emudb_horizontal_logo_light.png"
+            alt="EmuDB"
+            width={140}
+            height={36}
+            className="h-8 w-auto dark:hidden"
+            priority
+          />
+          <Image
+            src="/emudb_horizontal_logo_dark.png"
+            alt="EmuDB"
+            width={140}
+            height={36}
+            className="h-8 w-auto hidden dark:block"
+            priority
+          />
+        </Link>
+
+        {/* Primary nav */}
+        <nav className="hidden sm:flex items-center gap-1">
+          {NAV_LINKS.map(({ label, href }) => {
+            const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'text-[var(--color-accent)] bg-[var(--color-accent-surface)]'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right side */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
           {!loading && (
-            user ? (
-              <>
-                {user.isModerator && (
-                  <Link href="/moderation" className="text-zinc-400 hover:text-zinc-100 transition-colors px-2 py-1 rounded hover:bg-zinc-800">
-                    Moderation
+            <>
+              {user ? (
+                <>
+                  {user.isModerator && (
+                    <Link
+                      href="/moderation"
+                      className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-colors"
+                    >
+                      Moderation
+                    </Link>
+                  )}
+                  <span className="hidden sm:inline text-xs text-[var(--color-text-muted)] px-2">
+                    {user.username ?? user.email}
+                  </span>
+                  <button
+                    onClick={signOut}
+                    className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/signin"
+                    className="px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+                  >
+                    Sign in
                   </Link>
-                )}
-                <Link href="/tags/review" className="text-zinc-400 hover:text-zinc-100 transition-colors px-2 py-1 rounded hover:bg-zinc-800">
-                  Tag Review
-                </Link>
-                <span className="text-zinc-600 select-none">|</span>
-                <span className="text-zinc-400 text-xs">{user.username ?? user.email}</span>
-                <button
-                  onClick={signOut}
-                  className="px-3 py-1.5 rounded border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors text-xs"
-                >
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/signin" className="px-3 py-1.5 text-zinc-400 hover:text-zinc-100 transition-colors">
-                  Sign in
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-500 transition-colors text-sm font-medium"
-                >
-                  Sign up
-                </Link>
-              </>
-            )
+                  <Link
+                    href="/auth/signup"
+                    className="px-4 py-1.5 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </>
           )}
         </div>
+
       </div>
     </header>
   );

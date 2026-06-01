@@ -42,18 +42,16 @@ export default function TagReviewPage() {
       })
       .then((json: TagsResponse) => setTags(json.data ?? []))
       .catch((e) => {
-        if (e.message === 'forbidden') {
-          setError('Tag review requires at least one approved submission.');
-        } else {
-          setError('Failed to load pending tags.');
-        }
+        setError(
+          e.message === 'forbidden'
+            ? 'Tag review requires at least one approved submission.'
+            : 'Failed to load pending tags.'
+        );
       })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    if (user) fetchTags();
-  }, [user]);
+  useEffect(() => { if (user) fetchTags(); }, [user]);
 
   async function action(tag: PendingTag, verb: 'approve' | 'reject') {
     setActioning(tag.id);
@@ -63,11 +61,7 @@ export default function TagReviewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ submissionId: tag.id }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error ?? 'Action failed');
-        return;
-      }
+      if (!res.ok) { const data = await res.json(); alert(data.error ?? 'Action failed'); return; }
       fetchTags();
     } finally {
       setActioning(null);
@@ -75,53 +69,57 @@ export default function TagReviewPage() {
   }
 
   if (authLoading || !user) {
-    return <div className="mx-auto max-w-3xl px-4 py-10 text-zinc-400 text-sm">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-[var(--color-text-muted)]">Loading…</div>;
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8">
-      <h1 className="text-xl font-bold text-zinc-100 mb-2">Tag Review</h1>
-      <p className="text-sm text-zinc-400 mb-8">
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-2">Tag Review</h1>
+      <p className="text-sm text-[var(--color-text-muted)] mb-8 leading-relaxed">
         Review community-submitted tags. Approving a tag makes it visible on all attached listings.
-        You cannot review tags you submitted.
+        You cannot review tags you submitted yourself.
       </p>
 
       {error ? (
-        <div className="rounded border border-zinc-800 bg-zinc-900 p-6 text-sm text-zinc-400">{error}</div>
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-6 text-sm text-[var(--color-text-muted)]">
+          {error}
+        </div>
       ) : loading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-lg bg-zinc-800 animate-pulse" />
+            <div key={i} className="h-20 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] animate-pulse" />
           ))}
         </div>
       ) : tags.length === 0 ? (
-        <p className="text-sm text-zinc-500 py-12 text-center">No pending tags.</p>
+        <p className="text-sm text-[var(--color-text-muted)] py-16 text-center">No pending tags.</p>
       ) : (
         <div className="space-y-3">
           {tags.map((tag) => {
             const isOwn = tag.submittedByProfile?.id === user.id;
             return (
-              <div key={tag.id} className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+              <div key={tag.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-zinc-100">{tag.name}</span>
-                      <span className="text-xs text-zinc-500">
-                        by {tag.submittedByProfile?.username ?? 'anon'} · {new Date(tag.createdAt).toLocaleDateString()}
+                      <span className="font-semibold text-[var(--color-text)]">{tag.name}</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {new Date(tag.createdAt).toLocaleDateString()}
                       </span>
                       {isOwn && (
-                        <span className="text-xs bg-zinc-700 text-zinc-400 rounded px-1.5 py-0.5">your submission</span>
+                        <span className="inline-flex rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
+                          your submission
+                        </span>
                       )}
                     </div>
                     {tag.software.length > 0 && (
                       <div>
-                        <p className="text-xs text-zinc-500 mb-1">Attached to:</p>
+                        <p className="text-xs text-[var(--color-text-muted)] mb-1.5">Attached to:</p>
                         <div className="flex flex-wrap gap-1.5">
                           {tag.software.map((s) => (
                             <a
                               key={s.id}
                               href={`/software/${s.id}`}
-                              className="text-xs rounded border border-zinc-700 px-2 py-0.5 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+                              className="text-xs rounded-full border border-[var(--color-border)] px-2.5 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-colors"
                             >
                               {s.name}
                             </a>
@@ -135,7 +133,7 @@ export default function TagReviewPage() {
                       onClick={() => action(tag, 'approve')}
                       disabled={actioning === tag.id || isOwn}
                       title={isOwn ? "Can't review your own submission" : undefined}
-                      className="px-3 py-1.5 rounded bg-green-700 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       Approve
                     </button>
@@ -143,7 +141,7 @@ export default function TagReviewPage() {
                       onClick={() => action(tag, 'reject')}
                       disabled={actioning === tag.id || isOwn}
                       title={isOwn ? "Can't review your own submission" : undefined}
-                      className="px-3 py-1.5 rounded bg-zinc-700 text-xs font-medium text-zinc-200 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-medium text-[var(--color-text-muted)] hover:border-red-400 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       Reject
                     </button>

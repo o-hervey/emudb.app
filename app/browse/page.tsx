@@ -7,19 +7,19 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 const CATEGORIES = [
-  { value: 'EMULATOR', label: 'Emulator' },
-  { value: 'FRONTEND', label: 'Frontend' },
-  { value: 'OPERATING_SYSTEM', label: 'Operating System' },
+  { value: 'EMULATOR',            label: 'Emulator' },
+  { value: 'FRONTEND',            label: 'Frontend' },
+  { value: 'OPERATING_SYSTEM',    label: 'Operating System' },
   { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
-  { value: 'UTILITY', label: 'Utility' },
-  { value: 'SCRAPER', label: 'Scraper' },
-  { value: 'SHADER', label: 'Shader' },
-  { value: 'COMPANION_APP', label: 'Companion App' },
-  { value: 'INPUT_CONTROLLERS', label: 'Input Controllers' },
-  { value: 'STREAMING', label: 'Streaming' },
+  { value: 'UTILITY',             label: 'Utility' },
+  { value: 'SCRAPER',             label: 'Scraper' },
+  { value: 'SHADER',              label: 'Shader' },
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'INPUT_CONTROLLERS',   label: 'Input & Controllers' },
+  { value: 'STREAMING',           label: 'Streaming' },
 ];
 
-function Select({
+function FilterSelect({
   label,
   value,
   onChange,
@@ -32,11 +32,11 @@ function Select({
 }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus:border-indigo-500 focus:outline-none transition-colors"
+        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
       >
         <option value="">All</option>
         {options.map((o) => (
@@ -100,99 +100,126 @@ function BrowseContent() {
       .finally(() => setLoading(false));
   }, [q, category, platform, hardware, system, tag, page]);
 
-  const platformOptions  = (filters?.platforms ?? []).map((p) => ({ value: p.id, label: p.name }));
-  const hardwareOptions  = (filters?.hardware ?? []).map((h) => ({ value: h.id, label: h.name }));
-  const systemOptions    = (filters?.systems ?? []).map((s) => ({ value: s.id, label: s.name }));
-  const tagOptions       = (filters?.tags ?? []).map((t) => ({ value: t.id, label: t.name }));
-
-  const hasFilters = q || category || platform || hardware || system || tag;
+  const platformOptions = (filters?.platforms ?? []).map((p) => ({ value: p.id, label: p.name }));
+  const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ value: h.id, label: h.name }));
+  const systemOptions   = (filters?.systems ?? []).map((s) => ({ value: s.id, label: s.name }));
+  const tagOptions      = (filters?.tags ?? []).map((t) => ({ value: t.id, label: t.name }));
+  const hasFilters      = q || category || platform || hardware || system || tag;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-zinc-100 mb-4">Browse Software</h1>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="col-span-2 sm:col-span-3 lg:col-span-2">
-            <label className="block text-xs text-zinc-500 mb-1">Search</label>
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-8">Browse software</h1>
+
+      <div className="flex gap-8 items-start">
+        {/* ── Sidebar filters ── */}
+        <aside className="hidden lg:flex flex-col gap-5 w-56 shrink-0 sticky top-24">
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Search</label>
             <input
               type="search"
               value={q}
               onChange={(e) => update('q', e.target.value)}
               placeholder="Name or description…"
-              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
             />
           </div>
-          <Select label="Category" value={category} onChange={(v) => update('category', v)} options={CATEGORIES} />
-          <Select label="Platform" value={platform} onChange={(v) => update('platform', v)} options={platformOptions} />
-          <Select label="Hardware" value={hardware} onChange={(v) => update('hardware', v)} options={hardwareOptions} />
-          <Select label="System" value={system} onChange={(v) => update('system', v)} options={systemOptions} />
-        </div>
-        {tagOptions.length > 0 && (
-          <div className="mt-3 max-w-xs">
-            <Select label="Tag" value={tag} onChange={(v) => update('tag', v)} options={tagOptions} />
-          </div>
-        )}
-        {hasFilters && (
-          <button
-            onClick={() => router.push('/browse')}
-            className="mt-3 text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-2 transition-colors"
-          >
-            Clear all filters
-          </button>
-        )}
-      </div>
-
-      {error ? (
-        <p className="text-sm text-red-400">{error}</p>
-      ) : loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="h-36 rounded-lg bg-zinc-800 animate-pulse" />
-          ))}
-        </div>
-      ) : results.length === 0 ? (
-        <div className="py-16 text-center">
-          <p className="text-zinc-400 text-sm">No results found.</p>
+          <FilterSelect label="Category"  value={category} onChange={(v) => update('category', v)}  options={CATEGORIES} />
+          <FilterSelect label="Platform"  value={platform} onChange={(v) => update('platform', v)}  options={platformOptions} />
+          <FilterSelect label="System"    value={system}   onChange={(v) => update('system', v)}    options={systemOptions} />
+          <FilterSelect label="Hardware"  value={hardware} onChange={(v) => update('hardware', v)}  options={hardwareOptions} />
+          {tagOptions.length > 0 && (
+            <FilterSelect label="Tag"     value={tag}      onChange={(v) => update('tag', v)}       options={tagOptions} />
+          )}
           {hasFilters && (
-            <button onClick={() => router.push('/browse')} className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 underline">
-              Clear filters
+            <button
+              onClick={() => router.push('/browse')}
+              className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] underline underline-offset-2 transition-colors text-left"
+            >
+              Clear all filters
             </button>
           )}
-        </div>
-      ) : (
-        <>
-          <p className="text-xs text-zinc-500 mb-4">{meta.total} result{meta.total !== 1 ? 's' : ''}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {results.map((s) => <ListingCard key={s.id} software={s} />)}
+        </aside>
+
+        {/* ── Mobile filters (top bar, small screens) ── */}
+        <div className="lg:hidden w-full mb-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="col-span-2 sm:col-span-3">
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => update('q', e.target.value)}
+              placeholder="Search…"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+            />
           </div>
-          {meta.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-8">
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1}
-                className="px-4 py-2 rounded border border-zinc-700 text-sm text-zinc-300 hover:border-zinc-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-zinc-400">Page {page} of {meta.totalPages}</span>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={page >= meta.totalPages}
-                className="px-4 py-2 rounded border border-zinc-700 text-sm text-zinc-300 hover:border-zinc-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-              </button>
+          <FilterSelect label="Category" value={category} onChange={(v) => update('category', v)} options={CATEGORIES} />
+          <FilterSelect label="Platform" value={platform} onChange={(v) => update('platform', v)} options={platformOptions} />
+          <FilterSelect label="System"   value={system}   onChange={(v) => update('system', v)}   options={systemOptions} />
+        </div>
+
+        {/* ── Results ── */}
+        <div className="flex-1 min-w-0">
+          {error ? (
+            <p className="text-sm text-red-500">{error}</p>
+          ) : loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="h-44 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] animate-pulse" />
+              ))}
             </div>
+          ) : results.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="text-[var(--color-text-muted)] text-sm">No results found.</p>
+              {hasFilters && (
+                <button
+                  onClick={() => router.push('/browse')}
+                  className="mt-3 text-sm text-[var(--color-accent)] hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                {meta.total} result{meta.total !== 1 ? 's' : ''}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {results.map((s) => <ListingCard key={s.id} software={s} />)}
+              </div>
+              {meta.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-10">
+                  <button
+                    onClick={() => setPage(page - 1)}
+                    disabled={page <= 1}
+                    className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-[var(--color-text-muted)]">
+                    Page {page} of {meta.totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={page >= meta.totalPages}
+                    className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function BrowsePage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-7xl px-4 py-8 text-zinc-400 text-sm">Loading…</div>}>
+    <Suspense fallback={
+      <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-[var(--color-text-muted)]">Loading…</div>
+    }>
       <BrowseContent />
     </Suspense>
   );

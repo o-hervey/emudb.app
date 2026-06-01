@@ -1,21 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+/* Class-based dark mode — .dark on <html> activates dark: utilities */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Semantic colour tokens ────────────────────────────────────────────────
+   @theme emits these as CSS variables and generates bg-*, text-*, border-*
+   utility classes. The .dark block below overrides the variables at runtime
+   so every utility class automatically reflects the active theme.           */
+@theme {
+  --color-bg:              #F8F7F7;
+  --color-surface:         #FFFFFF;
+  --color-surface-raised:  #F4E7DA;
+  --color-border:          #E8D8CC;
+  --color-border-strong:   #C4A895;
+  --color-text:            #26182E;
+  --color-text-muted:      #7A5F6E;
+  --color-accent:          #8868F0;
+  --color-accent-hover:    #7450E0;
+  --color-accent-surface:  #EDE8FF;
+  --color-oat:             #F4E7B0;
+  --color-apricot:         #FDBA86;
+
+  --font-sans:  var(--font-geist-sans);
+  --font-serif: var(--font-source-serif);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Dark mode overrides ───────────────────────────────────────────────── */
+.dark {
+  --color-bg:              #1A0F22;
+  --color-surface:         #26182E;
+  --color-surface-raised:  #2E1F3C;
+  --color-border:          #3D2750;
+  --color-border-strong:   #5A3B72;
+  --color-text:            #F8F7F7;
+  --color-text-muted:      #A891B8;
+  --color-accent:          #A688F5;
+  --color-accent-hover:    #BCA0FF;
+  --color-accent-surface:  #3D2A6A;
+  --color-oat:             #4A3A10;
+  --color-apricot:         #6B3A10;
 }
 
+/* ─── Base styles ───────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-source-serif), Georgia, 'Times New Roman', serif;
 }
 
 * {

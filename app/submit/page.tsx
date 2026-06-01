@@ -8,46 +8,38 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const CATEGORIES = [
-  { value: 'EMULATOR', label: 'Emulator' },
-  { value: 'FRONTEND', label: 'Frontend' },
-  { value: 'OPERATING_SYSTEM', label: 'Operating System' },
+  { value: 'EMULATOR',            label: 'Emulator' },
+  { value: 'FRONTEND',            label: 'Frontend' },
+  { value: 'OPERATING_SYSTEM',    label: 'Operating System' },
   { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
-  { value: 'UTILITY', label: 'Utility' },
-  { value: 'SCRAPER', label: 'Scraper' },
-  { value: 'SHADER', label: 'Shader' },
-  { value: 'COMPANION_APP', label: 'Companion App' },
-  { value: 'INPUT_CONTROLLERS', label: 'Input Controllers' },
-  { value: 'STREAMING', label: 'Streaming' },
+  { value: 'UTILITY',             label: 'Utility' },
+  { value: 'SCRAPER',             label: 'Scraper' },
+  { value: 'SHADER',              label: 'Shader' },
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'INPUT_CONTROLLERS',   label: 'Input Controllers' },
+  { value: 'STREAMING',           label: 'Streaming' },
 ];
 
 const STATUSES = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'ABANDONED', label: 'Abandoned' },
+  { value: 'ACTIVE',     label: 'Active' },
+  { value: 'ABANDONED',  label: 'Abandoned' },
   { value: 'DEPRECATED', label: 'Deprecated' },
 ];
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+const inputCls =
+  'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors';
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+      <label className="block text-sm font-medium text-[var(--color-text)] mb-1.5">
         {label}
-        {hint && <span className="ml-1.5 font-normal text-zinc-500">{hint}</span>}
+        {hint && <span className="ml-1.5 font-normal text-[var(--color-text-muted)]">{hint}</span>}
       </label>
       {children}
     </div>
   );
 }
-
-const inputCls =
-  'w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none transition-colors';
 
 export default function SubmitPage() {
   const { user, loading: authLoading } = useAuth();
@@ -64,7 +56,6 @@ export default function SubmitPage() {
   const [systemIds, setSystemIds] = useState<string[]>([]);
   const [platformIds, setPlatformIds] = useState<string[]>([]);
   const [hardwareIds, setHardwareIds] = useState<string[]>([]);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -76,7 +67,7 @@ export default function SubmitPage() {
   }, [authLoading, user, router]);
 
   if (authLoading || !user) {
-    return <div className="mx-auto max-w-2xl px-4 py-16 text-zinc-400 text-sm">Loading…</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-16 text-sm text-[var(--color-text-muted)]">Loading…</div>;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -114,19 +105,26 @@ export default function SubmitPage() {
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <div className="rounded-lg border border-green-800 bg-green-900/20 p-8">
-          <h2 className="text-lg font-semibold text-green-300 mb-2">Submission received</h2>
-          <p className="text-sm text-zinc-400 mb-6">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-8">
+          <h2 className="text-lg font-bold text-[var(--color-text)] mb-2">Submission received</h2>
+          <p className="text-sm text-[var(--color-text-muted)] mb-6">
             Your listing is pending moderator review. Once approved it will appear in the directory.
           </p>
           <div className="flex justify-center gap-3">
             <button
-              onClick={() => { setSubmitted(false); setName(''); setDescription(''); setCategory(''); setSystemIds([]); setPlatformIds([]); setHardwareIds([]); }}
-              className="px-4 py-2 rounded border border-zinc-700 text-sm text-zinc-300 hover:border-zinc-500 transition-colors"
+              onClick={() => {
+                setSubmitted(false);
+                setName(''); setDescription(''); setCategory('');
+                setSystemIds([]); setPlatformIds([]); setHardwareIds([]);
+              }}
+              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
             >
               Submit another
             </button>
-            <Link href="/browse" className="px-4 py-2 rounded bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors">
+            <Link
+              href="/browse"
+              className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
               Browse directory
             </Link>
           </div>
@@ -136,35 +134,25 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
-      <h1 className="text-xl font-bold text-zinc-100 mb-1">Submit a listing</h1>
-      <p className="text-sm text-zinc-400 mb-8">
-        Submissions are reviewed before going live. Include links to the official project pages.
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10">
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-1">Submit a listing</h1>
+      <p className="text-sm text-[var(--color-text-muted)] mb-8 leading-relaxed">
+        Submissions are reviewed before going live. Please link only to official project pages, GitHub/GitLab repositories, or recognised distribution platforms.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="rounded border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-400">{error}</div>
+          <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            {error}
+          </div>
         )}
 
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Name" hint="(required)">
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. PCSX2"
-              className={inputCls}
-            />
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. PCSX2" className={inputCls} />
           </Field>
           <Field label="Category" hint="(required)">
-            <select
-              required
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={inputCls}
-            >
+            <select required value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
               <option value="">Select…</option>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -199,33 +187,18 @@ export default function SubmitPage() {
           </select>
         </Field>
 
-        <div className="space-y-4 border-t border-zinc-800 pt-6">
-          <p className="text-xs text-zinc-500 uppercase tracking-wider">Compatibility</p>
-          <MultiSelect
-            label="Platforms"
-            options={filters?.platforms ?? []}
-            selected={platformIds}
-            onChange={setPlatformIds}
-          />
-          <MultiSelect
-            label="Systems"
-            options={filters?.systems ?? []}
-            selected={systemIds}
-            onChange={setSystemIds}
-          />
-          <MultiSelect
-            label="Hardware"
-            options={filters?.hardware ?? []}
-            selected={hardwareIds}
-            onChange={setHardwareIds}
-          />
+        <div className="space-y-4 border-t border-[var(--color-border)] pt-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Compatibility</p>
+          <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
+          <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
+          <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
         </div>
 
-        <div className="pt-4 border-t border-zinc-800">
+        <div className="pt-4 border-t border-[var(--color-border)]">
           <button
             type="submit"
             disabled={submitting || !name || !category}
-            className="px-6 py-2.5 rounded bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-40 transition-colors"
+            className="px-6 py-2.5 rounded-lg bg-[var(--color-accent)] text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-40 transition-colors"
           >
             {submitting ? 'Submitting…' : 'Submit for review'}
           </button>

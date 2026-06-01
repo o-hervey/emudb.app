@@ -55,6 +55,7 @@ export interface Rating {
 
 export interface SoftwareDetail extends SoftwareListing {
   ratings: Rating[];
+  similar: SoftwareListing[];
 }
 
 export interface FiltersData {

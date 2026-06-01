@@ -53,6 +53,28 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const similar = await prisma.software.findMany({
+    where: { approved: true, category: software.category, id: { not: id } },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      category: true,
+      status: true,
+      websiteUrl: true,
+      downloadUrl: true,
+      sourceUrl: true,
+      createdAt: true,
+      updatedAt: true,
+      platforms: { select: { platform: { select: { id: true, name: true, group: true } } } },
+      systems: { select: { system: { select: { id: true, name: true, manufacturer: true, type: true } } } },
+      hardware: { select: { hardware: { select: { id: true, name: true, manufacturer: true, type: true } } } },
+      tags: { where: { approved: true }, select: { tag: { select: { id: true, name: true } } } },
+    },
+    take: 4,
+    orderBy: { createdAt: "desc" },
+  });
+
   const [qualityAggregate, performanceAggregate, ratingCount] = await Promise.all([
     prisma.rating.aggregate({
       where: { softwareId: id, qualityScore: { not: null } },
@@ -74,5 +96,15 @@ export async function GET(
     avgQuality: qualityAggregate._avg.qualityScore,
     avgPerformance: performanceAggregate._avg.performanceScore,
     ratingCount,
+    similar: similar.map((s) => ({
+      ...s,
+      platforms: s.platforms.map((p) => p.platform),
+      systems: s.systems.map((p) => p.system),
+      hardware: s.hardware.map((p) => p.hardware),
+      tags: s.tags.map((p) => p.tag),
+      avgQuality: null,
+      avgPerformance: null,
+      ratingCount: 0,
+    })),
   });
 }
