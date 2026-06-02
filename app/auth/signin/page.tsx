@@ -89,7 +89,21 @@ function SignInForm() {
         </div>
       )}
       <AuthInput label="Email"    type="email"    value={email}    onChange={setEmail}    required />
-      <AuthInput label="Password" type="password" value={password} onChange={setPassword} required />
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-[var(--color-text)]">Password</label>
+          <Link href="/auth/forgot-password" className="text-xs text-[var(--color-accent)] hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+        <input
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+        />
+      </div>
       <button
         type="submit"
         disabled={loading}

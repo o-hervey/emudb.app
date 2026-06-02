@@ -1,9 +1,7 @@
 'use client';
 
-import { useAuth } from '@/components/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 function AuthInput({
@@ -48,10 +46,9 @@ export default function SignUpPage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { refresh } = useAuth();
-  const router = useRouter();
+  const [sent, setSent] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -63,8 +60,7 @@ export default function SignUpPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Sign up failed'); return; }
-      await refresh();
-      router.push('/');
+      setSent(true);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -83,44 +79,55 @@ export default function SignUpPage() {
           <p className="text-sm text-[var(--color-text-muted)] mt-1">Free. No spam.</p>
         </div>
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-                {error}
-              </div>
-            )}
-            <AuthInput label="Email"    type="email"    value={email}    onChange={setEmail}    required />
-            <AuthInput
-              label="Username"
-              type="text"
-              value={username}
-              onChange={setUsername}
-              placeholder="Optional"
-              hint="3–30 characters. Letters, numbers, underscores."
-            />
-            <AuthInput
-              label="Password"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              required
-              minLength={8}
-              hint="At least 8 characters."
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-[var(--color-accent)] py-2.5 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Creating account…' : 'Create account'}
-            </button>
-            <p className="text-center text-sm text-[var(--color-text-muted)]">
-              Already have an account?{' '}
-              <Link href="/auth/signin" className="text-[var(--color-accent)] hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </form>
+          {sent ? (
+            <div className="text-center space-y-3">
+              <p className="text-sm text-[var(--color-text)]">
+                A confirmation link has been sent to <strong>{email}</strong>.
+              </p>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Check your inbox and click the link to activate your account. Check your spam folder if it doesn&apos;t arrive.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                  {error}
+                </div>
+              )}
+              <AuthInput label="Email"    type="email"    value={email}    onChange={setEmail}    required />
+              <AuthInput
+                label="Username"
+                type="text"
+                value={username}
+                onChange={setUsername}
+                placeholder="Optional"
+                hint="3–30 characters. Letters, numbers, underscores."
+              />
+              <AuthInput
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                required
+                minLength={8}
+                hint="At least 8 characters."
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-[var(--color-accent)] py-2.5 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Creating account…' : 'Create account'}
+              </button>
+              <p className="text-center text-sm text-[var(--color-text-muted)]">
+                Already have an account?{' '}
+                <Link href="/auth/signin" className="text-[var(--color-accent)] hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </form>
+          )}
         </div>
       </div>
     </div>
