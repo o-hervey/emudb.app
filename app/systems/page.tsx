@@ -1,7 +1,6 @@
 'use client';
 
 import { useFilters } from '@/components/FiltersContext';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -27,15 +26,13 @@ function SystemCard({ system, logoUrl }: { system: SystemItem; logoUrl?: string 
       href={`/browse?system=${system.id}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)] transition-colors"
     >
-      <div className="flex items-center justify-center bg-white dark:bg-[var(--color-surface-raised)] min-h-[72px] px-4 py-4">
+      <div className="flex items-center justify-center min-h-[72px] px-4 py-4">
         {logoUrl ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={logoUrl}
             alt={system.name}
-            width={120}
-            height={60}
-            className="max-h-14 w-auto object-contain"
-            unoptimized={false}
+            className="max-h-14 w-full object-contain"
           />
         ) : (
           <span className="text-sm font-semibold text-center leading-snug text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors px-1">
