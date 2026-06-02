@@ -84,9 +84,10 @@ const ALIASES: Record<string, string> = {
 };
 
 function igdbLogoUrl(rawUrl: string): string {
-  // rawUrl is like //images.igdb.com/igdb/image/upload/t_thumb/co1234.png
-  // Upgrade to t_logo_med (284×284) and add https:
-  return 'https:' + rawUrl.replace('/t_thumb/', '/t_logo_med/');
+  // Upgrade to t_logo_med size, add https:, and force .png extension.
+  // IGDB serves .jpg by default but JPEG has no transparency; Cloudinary
+  // will convert to PNG and preserve any transparent backgrounds.
+  return ('https:' + rawUrl.replace('/t_thumb/', '/t_logo_med/')).replace(/\.(jpg|jpeg|webp)$/i, '.png');
 }
 
 export async function GET() {
