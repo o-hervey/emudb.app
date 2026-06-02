@@ -1,7 +1,9 @@
 'use client';
 
 import { useFilters } from '@/components/FiltersContext';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const TYPE_ORDER = ['home console', 'handheld', 'arcade', 'computer', 'other'];
 
@@ -13,10 +15,57 @@ const TYPE_LABELS: Record<string, string> = {
   'other':        'Other',
 };
 
-export default function SystemsPage() {
-  const { filters, loading } = useFilters();
+interface SystemItem {
+  id: string;
+  name: string;
+  type: string;
+}
 
-  const grouped: Record<string, NonNullable<typeof filters>['systems']> = {};
+function SystemCard({ system, logoUrl }: { system: SystemItem; logoUrl?: string }) {
+  return (
+    <Link
+      href={`/browse?system=${system.id}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)] transition-colors"
+    >
+      <div className="flex items-center justify-center bg-white dark:bg-[var(--color-surface-raised)] min-h-[72px] px-4 py-4">
+        {logoUrl ? (
+          <Image
+            src={logoUrl}
+            alt={system.name}
+            width={120}
+            height={60}
+            className="max-h-14 w-auto object-contain"
+            unoptimized={false}
+          />
+        ) : (
+          <span className="text-sm font-semibold text-center leading-snug text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors px-1">
+            {system.name}
+          </span>
+        )}
+      </div>
+      {logoUrl && (
+        <div className="border-t border-[var(--color-border)] px-3 py-2">
+          <span className="block text-xs font-medium text-[var(--color-text)] group-hover:text-[var(--color-accent)] transition-colors truncate">
+            {system.name}
+          </span>
+        </div>
+      )}
+    </Link>
+  );
+}
+
+export default function SystemsPage() {
+  const { filters, loading: filtersLoading } = useFilters();
+  const [logos, setLogos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('/api/systems/images')
+      .then((r) => r.ok ? r.json() : {})
+      .then((data: Record<string, string>) => setLogos(data))
+      .catch(() => {});
+  }, []);
+
+  const grouped: Record<string, SystemItem[]> = {};
   for (const system of filters?.systems ?? []) {
     const key = system.type.toLowerCase();
     if (!grouped[key]) grouped[key] = [];
@@ -29,45 +78,37 @@ export default function SystemsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
       <h1 className="text-2xl font-bold text-[var(--color-text)] mb-2">Systems</h1>
       <p className="text-sm text-[var(--color-text-muted)] mb-10">
         Browse the directory by the system being emulated.
       </p>
 
-      {loading ? (
-        <div className="space-y-8">
-          {Array.from({ length: 4 }).map((_, i) => (
+      {filtersLoading ? (
+        <div className="space-y-10">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div key={i}>
-              <div className="h-5 w-32 rounded bg-[var(--color-surface)] animate-pulse mb-4" />
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: 8 }).map((_, j) => (
-                  <div key={j} className="h-8 w-28 rounded-full bg-[var(--color-surface)] animate-pulse" />
+              <div className="h-4 w-32 rounded bg-[var(--color-surface)] animate-pulse mb-5" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {Array.from({ length: 10 }).map((_, j) => (
+                  <div key={j} className="h-24 rounded-xl bg-[var(--color-surface)] animate-pulse" />
                 ))}
               </div>
             </div>
           ))}
         </div>
       ) : orderedGroups.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-muted)]">
-          No systems found. The database may still need seeding.
-        </p>
+        <p className="text-sm text-[var(--color-text-muted)]">No systems found.</p>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-12">
           {orderedGroups.map((type) => (
             <section key={type}>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-4">
                 {TYPE_LABELS[type] ?? type}
               </h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {(grouped[type] ?? []).map((system) => (
-                  <Link
-                    key={system.id}
-                    href={`/browse?system=${system.id}`}
-                    className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    {system.name}
-                  </Link>
+                  <SystemCard key={system.id} system={system} logoUrl={logos[system.id]} />
                 ))}
               </div>
             </section>
