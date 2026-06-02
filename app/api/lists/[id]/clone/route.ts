@@ -1,0 +1,51 @@
+import { getSessionUser, unauthorized } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
+
+  const { id: listId } = await params;
+
+  const list = await prisma.userList.findFirst({
+    where: { id: listId, isPublic: true },
+    select: {
+      ownerId: true,
+      name: true,
+      description: true,
+      entries: {
+        select: { softwareId: true, hardwareId: true, notes: true, sortOrder: true },
+      },
+    },
+  });
+
+  if (!list) return NextResponse.json({ error: "List not found" }, { status: 404 });
+  if (list.ownerId === user.id) {
+    return NextResponse.json({ error: "Cannot clone your own list" }, { status: 400 });
+  }
+
+  const cloned = await prisma.userList.create({
+    data: {
+      ownerId: user.id,
+      name: list.name,
+      description: list.description,
+      isPublic: false,
+      clonedFrom: listId,
+      entries: {
+        create: list.entries.map((e) => ({
+          softwareId: e.softwareId,
+          hardwareId: e.hardwareId,
+          notes: e.notes,
+          sortOrder: e.sortOrder,
+        })),
+      },
+    },
+    select: { id: true, name: true, description: true, isPublic: true, createdAt: true },
+  });
+
+  return NextResponse.json(cloned, { status: 201 });
+}
