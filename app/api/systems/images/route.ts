@@ -89,41 +89,44 @@ function igdbLogoUrl(rawUrl: string): string {
 
 export async function GET() {
   if (!process.env.IGDB_CLIENT_ID || !process.env.IGDB_CLIENT_SECRET) {
+    console.warn('[systems/images] IGDB credentials not set');
     return NextResponse.json({});
   }
 
   try {
-    const [systems, page1, page2] = await Promise.all([
+    // Fetch all platforms — do NOT filter by platform_logo != null because IGDB's
+    // filter inconsistently excludes platforms that do have logos (e.g. Nintendo DS,
+    // 3DS, Switch, GameCube). There are only ~220 platforms total; one request covers all.
+    const [systems, igdbPlatforms] = await Promise.all([
       prisma.system.findMany({ select: { id: true, name: true } }),
-      // IGDB max limit is 500; fetch two pages to cover the full catalogue
       queryIGDB<IGDBPlatform[]>(
         'platforms',
-        'fields id, name, platform_logo.url; limit 500; where platform_logo != null; offset 0;'
-      ),
-      queryIGDB<IGDBPlatform[]>(
-        'platforms',
-        'fields id, name, platform_logo.url; limit 500; where platform_logo != null; offset 500;'
+        'fields id, name, platform_logo.url; limit 500;'
       ),
     ]);
 
-    // Build name → logo URL lookup from IGDB data
+    console.log(`[systems/images] fetched ${igdbPlatforms.length} IGDB platforms, ${systems.length} EmuDB systems`);
+
+    // Build name → logo URL lookup — only include entries that actually have a logo URL
     const byName = new Map<string, string>();
-    for (const p of [...page1, ...page2]) {
+    for (const p of igdbPlatforms) {
       if (p.platform_logo?.url) {
         byName.set(p.name.toLowerCase(), igdbLogoUrl(p.platform_logo.url));
       }
     }
 
     const result: Record<string, string> = {};
+    const unmatched: string[] = [];
+
     for (const system of systems) {
       const lower = system.name.toLowerCase();
       const aliasKey = ALIASES[lower];
 
-      // 1. Try exact match
+      // 1. Exact match
       let url = byName.get(lower);
-      // 2. Try alias
+      // 2. Alias map
       if (!url && aliasKey) url = byName.get(aliasKey);
-      // 3. Try partial: IGDB name contains ours, or ours contains IGDB name
+      // 3. Partial: IGDB name contains ours, or ours contains IGDB name
       if (!url) {
         for (const [igdbName, logoUrl] of byName) {
           if (igdbName.includes(lower) || lower.includes(igdbName)) {
@@ -133,8 +136,17 @@ export async function GET() {
         }
       }
 
-      if (url) result[system.id] = url;
+      if (url) {
+        result[system.id] = url;
+      } else {
+        unmatched.push(system.name);
+      }
     }
+
+    if (unmatched.length) {
+      console.log(`[systems/images] no logo found for: ${unmatched.join(', ')}`);
+    }
+    console.log(`[systems/images] matched ${Object.keys(result).length}/${systems.length} systems`);
 
     return NextResponse.json(result);
   } catch (err) {
