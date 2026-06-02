@@ -24,6 +24,144 @@ const STATUS_CLASSES: Record<string, string> = {
 
 type TabKey = 'overview' | 'platforms' | 'systems';
 
+const CATEGORIES = [
+  { value: 'EMULATOR',            label: 'Emulator' },
+  { value: 'FRONTEND',            label: 'Frontend' },
+  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
+  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
+  { value: 'UTILITY',             label: 'Utility' },
+  { value: 'SCRAPER',             label: 'Scraper' },
+  { value: 'SHADER',              label: 'Shader' },
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'INPUT_CONTROLLERS',   label: 'Input & Controllers' },
+  { value: 'STREAMING',           label: 'Streaming' },
+];
+
+const STATUSES = [
+  { value: 'ACTIVE',     label: 'Active' },
+  { value: 'ABANDONED',  label: 'Abandoned' },
+  { value: 'DEPRECATED', label: 'Deprecated' },
+];
+
+const inputCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors';
+
+function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: () => void }) {
+  const [name, setName] = useState(software.name);
+  const [description, setDescription] = useState(software.description ?? '');
+  const [category, setCategory] = useState(software.category);
+  const [status, setStatus] = useState(software.status);
+  const [websiteUrl, setWebsiteUrl] = useState(software.websiteUrl ?? '');
+  const [downloadUrl, setDownloadUrl] = useState(software.downloadUrl ?? '');
+  const [sourceUrl, setSourceUrl] = useState(software.sourceUrl ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'EDIT',
+          targetId: software.id,
+          payload: {
+            name: name.trim(),
+            description: description.trim() || null,
+            category,
+            status,
+            websiteUrl: websiteUrl.trim() || null,
+            downloadUrl: downloadUrl.trim() || null,
+            sourceUrl: sourceUrl.trim() || null,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? 'Submission failed'); return; }
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 px-5 py-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-emerald-700 dark:text-emerald-400">
+          Edit submitted — pending moderator review.
+        </p>
+        <button type="button" onClick={onClose} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors shrink-0">
+          Dismiss
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="font-semibold text-[var(--color-text)]">Suggest an edit</h3>
+        <button type="button" onClick={onClose} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+          Cancel
+        </button>
+      </div>
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="edit-name" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Name</label>
+          <input id="edit-name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label htmlFor="edit-category" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Category</label>
+          <select id="edit-category" value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+            {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label htmlFor="edit-description" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Description</label>
+        <textarea id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Brief description…" className={`${inputCls} resize-none`} />
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div>
+          <label htmlFor="edit-website" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Website URL</label>
+          <input id="edit-website" type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://…" className={inputCls} />
+        </div>
+        <div>
+          <label htmlFor="edit-download" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Download URL</label>
+          <input id="edit-download" type="url" value={downloadUrl} onChange={(e) => setDownloadUrl(e.target.value)} placeholder="https://…" className={inputCls} />
+        </div>
+        <div>
+          <label htmlFor="edit-source" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Source URL</label>
+          <input id="edit-source" type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://github.com/…" className={inputCls} />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="edit-status" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Status</label>
+        <select id="edit-status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
+          {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </div>
+      <button
+        type="submit"
+        disabled={submitting || !name.trim()}
+        className="px-5 py-2.5 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-40 transition-colors"
+      >
+        {submitting ? 'Submitting…' : 'Submit for review'}
+      </button>
+    </form>
+  );
+}
+
 
 function ExternalLink({ href, label }: { href: string; label: string }) {
   return (
@@ -128,8 +266,9 @@ function RatingForm({
       {hardwareOptions.length > 0 && (
         <div className="space-y-4 border-t border-[var(--color-border)] pt-4">
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Device (for performance score)</label>
+            <label htmlFor="rating-device" className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Device (for performance score)</label>
             <select
+              id="rating-device"
               value={hardwareId}
               onChange={(e) => setHardwareId(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
@@ -303,6 +442,7 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [showEdit, setShowEdit] = useState(false);
 
   const fetchSoftware = () => {
     setLoading(true);
@@ -371,6 +511,15 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[software.status] ?? STATUS_CLASSES.ABANDONED}`}>
                     {STATUS_LABELS[software.status] ?? software.status}
                   </span>
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={() => setShowEdit((v) => !v)}
+                      className="ml-auto px-3 py-1 rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
+                    >
+                      {showEdit ? 'Cancel edit' : 'Suggest edit'}
+                    </button>
+                  )}
                 </div>
                 {software.description && (
                   <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-2xl">{software.description}</p>
@@ -379,10 +528,17 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
 
+          {showEdit && software && (
+            <div className="mb-6">
+              <EditForm software={software} onClose={() => setShowEdit(false)} />
+            </div>
+          )}
+
           {/* Tab bar */}
           <div className="flex border-b border-[var(--color-border)] mb-6 -mt-2">
             {tabs.map(({ key, label }) => (
               <button
+                type="button"
                 key={key}
                 onClick={() => setActiveTab(key)}
                 className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
@@ -394,13 +550,6 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
                 {label}
               </button>
             ))}
-            <button
-              className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-[var(--color-text-muted)] opacity-50 cursor-not-allowed"
-              title="Coming soon"
-              disabled
-            >
-              Screenshots
-            </button>
           </div>
 
           {/* Tab: Overview */}
@@ -468,9 +617,13 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {software.platforms.map((p) => (
-                    <span key={p.id} className="rounded-full border border-[var(--color-border)] px-3 py-1 text-sm text-[var(--color-text)]">
+                    <Link
+                      key={p.id}
+                      href={`/browse?platform=${p.id}`}
+                      className="rounded-full border border-[var(--color-border)] px-3 py-1 text-sm text-[var(--color-text)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                    >
                       {p.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -485,9 +638,13 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {software.systems.map((s) => (
-                    <span key={s.id} className="rounded-full border border-[var(--color-border)] px-3 py-1 text-sm text-[var(--color-text)]">
+                    <Link
+                      key={s.id}
+                      href={`/browse?system=${s.id}`}
+                      className="rounded-full border border-[var(--color-border)] px-3 py-1 text-sm text-[var(--color-text)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                    >
                       {s.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               )}

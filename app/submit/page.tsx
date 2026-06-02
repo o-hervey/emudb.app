@@ -112,9 +112,12 @@ export default function SubmitPage() {
           </p>
           <div className="flex justify-center gap-3">
             <button
+              type="button"
               onClick={() => {
                 setSubmitted(false);
                 setName(''); setDescription(''); setCategory('');
+                setStatus('ACTIVE');
+                setWebsiteUrl(''); setDownloadUrl(''); setSourceUrl('');
                 setSystemIds([]); setPlatformIds([]); setHardwareIds([]);
               }}
               className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
@@ -152,7 +155,7 @@ export default function SubmitPage() {
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. PCSX2" className={inputCls} />
           </Field>
           <Field label="Category" hint="(required)">
-            <select required value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+            <select aria-label="Category" required value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
               <option value="">Select…</option>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -182,7 +185,7 @@ export default function SubmitPage() {
         </div>
 
         <Field label="Status">
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
+          <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
             {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </Field>

@@ -11,10 +11,10 @@ export async function GET(req: NextRequest) {
   const sort = params.get("sort");
   const category = params.get("category");
   const status = params.get("status");
-  const platformId = params.get("platform");
-  const hardwareId = params.get("hardware");
-  const systemId = params.get("system");
-  const tagId = params.get("tag");
+  const platformIds = params.getAll("platform");
+  const hardwareIds = params.getAll("hardware");
+  const systemIds = params.getAll("system");
+  const tagIds = params.getAll("tag");
   const search = params.get("q")?.trim();
 
   if (category && !Object.values(Category).includes(category as Category)) {
@@ -25,21 +25,41 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const where: Prisma.SoftwareWhereInput = {
-    approved: true,
-    ...(category && { category: category as Category }),
-    ...(status && { status: status as SoftwareStatus }),
-    ...(platformId && { platforms: { some: { platformId } } }),
-    ...(hardwareId && { hardware: { some: { hardwareId } } }),
-    ...(systemId && { systems: { some: { systemId } } }),
-    ...(tagId && { tags: { some: { tagId, approved: true } } }),
-    ...(search && {
+  const and: Prisma.SoftwareWhereInput[] = [{ approved: true }];
+
+  if (category) and.push({ category: category as Category });
+  if (status)   and.push({ status: status as SoftwareStatus });
+
+  for (const platformId of platformIds) {
+    and.push({ platforms: { some: { platformId } } });
+  }
+  for (const hardwareId of hardwareIds) {
+    and.push({ hardware: { some: { hardwareId } } });
+  }
+  for (const systemId of systemIds) {
+    and.push({ systems: { some: { systemId } } });
+  }
+  for (const tagId of tagIds) {
+    and.push({ tags: { some: { tagId, approved: true } } });
+  }
+  if (search) {
+    and.push({
       OR: [
         { name: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
       ],
-    }),
-  };
+    });
+  }
+
+  const where: Prisma.SoftwareWhereInput = { AND: and };
+
+  const orderBy: Prisma.SoftwareOrderByWithRelationInput =
+    sort === "newest" || sort === "recent" ? { createdAt: "desc" } :
+    sort === "oldest"                      ? { createdAt: "asc" } :
+    sort === "top_rated"                   ? { ratings: { _count: "desc" } } :
+    sort === "most_rated"                  ? { ratings: { _count: "desc" } } :
+    sort === "za"                          ? { name: "desc" } :
+                                             { name: "asc" };
 
   const [total, items] = await Promise.all([
     prisma.software.count({ where }),
@@ -63,11 +83,7 @@ export async function GET(req: NextRequest) {
           select: { qualityScore: true, performanceScore: true },
         },
       },
-      orderBy: sort === "recent"
-        ? { createdAt: "desc" as const }
-        : sort === "top_rated"
-        ? { ratings: { _count: "desc" as const } }
-        : { name: "asc" as const },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),

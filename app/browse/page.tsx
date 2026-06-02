@@ -1,6 +1,7 @@
 'use client';
 
 import { ListingCard } from '@/components/ListingCard';
+import { MultiSelect } from '@/components/MultiSelect';
 import { useFilters } from '@/components/FiltersContext';
 import type { PaginatedResponse, SoftwareListing } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,6 +20,15 @@ const CATEGORIES = [
   { value: 'STREAMING',           label: 'Streaming' },
 ];
 
+const SORT_OPTIONS = [
+  { value: 'az',         label: 'A–Z' },
+  { value: 'za',         label: 'Z–A' },
+  { value: 'newest',     label: 'Newest' },
+  { value: 'oldest',     label: 'Oldest' },
+  { value: 'top_rated',  label: 'Top rated' },
+  { value: 'most_rated', label: 'Most rated' },
+];
+
 function FilterSelect({
   label,
   value,
@@ -30,10 +40,12 @@ function FilterSelect({
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const id = `filter-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div>
-      <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{label}</label>
+      <label htmlFor={id} className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">{label}</label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
@@ -57,17 +69,26 @@ function BrowseContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const q        = searchParams.get('q') ?? '';
-  const category = searchParams.get('category') ?? '';
-  const platform = searchParams.get('platform') ?? '';
-  const hardware = searchParams.get('hardware') ?? '';
-  const system   = searchParams.get('system') ?? '';
-  const tag      = searchParams.get('tag') ?? '';
-  const page     = parseInt(searchParams.get('page') ?? '1', 10);
+  const q         = searchParams.get('q') ?? '';
+  const category  = searchParams.get('category') ?? '';
+  const sort      = searchParams.get('sort') ?? '';
+  const platforms = searchParams.getAll('platform');
+  const hardware  = searchParams.getAll('hardware');
+  const systems   = searchParams.getAll('system');
+  const tags      = searchParams.getAll('tag');
+  const page      = parseInt(searchParams.get('page') ?? '1', 10);
 
-  function update(key: string, value: string) {
+  function set(key: string, value: string) {
     const p = new URLSearchParams(searchParams.toString());
     if (value) { p.set(key, value); } else { p.delete(key); }
+    p.delete('page');
+    router.push(`/browse?${p.toString()}`);
+  }
+
+  function setMulti(key: string, values: string[]) {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete(key);
+    for (const v of values) p.append(key, v);
     p.delete('page');
     router.push(`/browse?${p.toString()}`);
   }
@@ -82,12 +103,13 @@ function BrowseContent() {
     setLoading(true);
     setError('');
     const p = new URLSearchParams();
-    if (q)        p.set('q', q);
+    if (q)       p.set('q', q);
     if (category) p.set('category', category);
-    if (platform) p.set('platform', platform);
-    if (hardware) p.set('hardware', hardware);
-    if (system)   p.set('system', system);
-    if (tag)      p.set('tag', tag);
+    if (sort)    p.set('sort', sort);
+    for (const id of platforms) p.append('platform', id);
+    for (const id of hardware)  p.append('hardware', id);
+    for (const id of systems)   p.append('system', id);
+    for (const id of tags)      p.append('tag', id);
     p.set('page', String(page));
 
     fetch(`/api/software?${p.toString()}`)
@@ -98,13 +120,13 @@ function BrowseContent() {
       })
       .catch(() => setError('Failed to load results.'))
       .finally(() => setLoading(false));
-  }, [q, category, platform, hardware, system, tag, page]);
+  }, [q, category, sort, platforms.join(','), hardware.join(','), systems.join(','), tags.join(','), page]);
 
-  const platformOptions = (filters?.platforms ?? []).map((p) => ({ value: p.id, label: p.name }));
-  const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ value: h.id, label: h.name }));
-  const systemOptions   = (filters?.systems ?? []).map((s) => ({ value: s.id, label: s.name }));
-  const tagOptions      = (filters?.tags ?? []).map((t) => ({ value: t.id, label: t.name }));
-  const hasFilters      = q || category || platform || hardware || system || tag;
+  const platformOptions = (filters?.platforms ?? []).map((p) => ({ id: p.id, name: p.name }));
+  const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ id: h.id, name: h.name }));
+  const systemOptions   = (filters?.systems ?? []).map((s) => ({ id: s.id, name: s.name }));
+  const tagOptions      = (filters?.tags ?? []).map((t) => ({ id: t.id, name: t.name }));
+  const hasFilters      = q || category || sort || platforms.length || hardware.length || systems.length || tags.length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -118,20 +140,22 @@ function BrowseContent() {
             <input
               type="search"
               value={q}
-              onChange={(e) => update('q', e.target.value)}
+              onChange={(e) => set('q', e.target.value)}
               placeholder="Name or description…"
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
             />
           </div>
-          <FilterSelect label="Category"  value={category} onChange={(v) => update('category', v)}  options={CATEGORIES} />
-          <FilterSelect label="Platform"  value={platform} onChange={(v) => update('platform', v)}  options={platformOptions} />
-          <FilterSelect label="System"    value={system}   onChange={(v) => update('system', v)}    options={systemOptions} />
-          <FilterSelect label="Hardware"  value={hardware} onChange={(v) => update('hardware', v)}  options={hardwareOptions} />
+          <FilterSelect label="Sort by"  value={sort}     onChange={(v) => set('sort', v)}     options={SORT_OPTIONS} />
+          <FilterSelect label="Category" value={category} onChange={(v) => set('category', v)} options={CATEGORIES} />
+          <MultiSelect label="Platform" options={platformOptions} selected={platforms} onChange={(v) => setMulti('platform', v)} />
+          <MultiSelect label="System"   options={systemOptions}   selected={systems}   onChange={(v) => setMulti('system', v)} />
+          <MultiSelect label="Hardware" options={hardwareOptions} selected={hardware}  onChange={(v) => setMulti('hardware', v)} />
           {tagOptions.length > 0 && (
-            <FilterSelect label="Tag"     value={tag}      onChange={(v) => update('tag', v)}       options={tagOptions} />
+            <MultiSelect label="Tag" options={tagOptions} selected={tags} onChange={(v) => setMulti('tag', v)} />
           )}
           {hasFilters && (
             <button
+              type="button"
               onClick={() => router.push('/browse')}
               className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] underline underline-offset-2 transition-colors text-left"
             >
@@ -140,20 +164,21 @@ function BrowseContent() {
           )}
         </aside>
 
-        {/* ── Mobile filters (top bar, small screens) ── */}
-        <div className="lg:hidden w-full mb-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="col-span-2 sm:col-span-3">
-            <input
-              type="search"
-              value={q}
-              onChange={(e) => update('q', e.target.value)}
-              placeholder="Search…"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
-            />
+        {/* ── Mobile filters ── */}
+        <div className="lg:hidden w-full mb-4 flex flex-col gap-3">
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => set('q', e.target.value)}
+            placeholder="Search…"
+            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <FilterSelect label="Sort by"  value={sort}     onChange={(v) => set('sort', v)}     options={SORT_OPTIONS} />
+            <FilterSelect label="Category" value={category} onChange={(v) => set('category', v)} options={CATEGORIES} />
           </div>
-          <FilterSelect label="Category" value={category} onChange={(v) => update('category', v)} options={CATEGORIES} />
-          <FilterSelect label="Platform" value={platform} onChange={(v) => update('platform', v)} options={platformOptions} />
-          <FilterSelect label="System"   value={system}   onChange={(v) => update('system', v)}   options={systemOptions} />
+          <MultiSelect label="Platform" options={platformOptions} selected={platforms} onChange={(v) => setMulti('platform', v)} />
+          <MultiSelect label="System"   options={systemOptions}   selected={systems}   onChange={(v) => setMulti('system', v)} />
         </div>
 
         {/* ── Results ── */}
@@ -171,6 +196,7 @@ function BrowseContent() {
               <p className="text-[var(--color-text-muted)] text-sm">No results found.</p>
               {hasFilters && (
                 <button
+                  type="button"
                   onClick={() => router.push('/browse')}
                   className="mt-3 text-sm text-[var(--color-accent)] hover:underline"
                 >
@@ -189,6 +215,7 @@ function BrowseContent() {
               {meta.totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 mt-10">
                   <button
+                    type="button"
                     onClick={() => setPage(page - 1)}
                     disabled={page <= 1}
                     className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -199,6 +226,7 @@ function BrowseContent() {
                     Page {page} of {meta.totalPages}
                   </span>
                   <button
+                    type="button"
                     onClick={() => setPage(page + 1)}
                     disabled={page >= meta.totalPages}
                     className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
