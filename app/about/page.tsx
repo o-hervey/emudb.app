@@ -56,13 +56,11 @@ export default function AboutPage() {
           </p>
           <p>
             If software is missing from the directory, submit it. If you{"'"}ve used something and have an
-            opinion, rate it — especially if you can attach a hardware-specific performance score. If a tag
-            would make something easier to find, add it.
+            opinion, rate it — especially if you can attach a hardware-specific performance score.
           </p>
           <p>
             Submitted listings go through a moderation queue before they go live, so quality stays high
-            without requiring accounts to be vetted upfront. Anyone with at least one approved submission
-            can review pending tags.
+            without requiring accounts to be vetted upfront.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 mt-6">

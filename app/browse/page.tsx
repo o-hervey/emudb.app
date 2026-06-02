@@ -75,7 +75,6 @@ function BrowseContent() {
   const platforms = searchParams.getAll('platform');
   const hardware  = searchParams.getAll('hardware');
   const systems   = searchParams.getAll('system');
-  const tags      = searchParams.getAll('tag');
   const page      = parseInt(searchParams.get('page') ?? '1', 10);
 
   function set(key: string, value: string) {
@@ -109,7 +108,6 @@ function BrowseContent() {
     for (const id of platforms) p.append('platform', id);
     for (const id of hardware)  p.append('hardware', id);
     for (const id of systems)   p.append('system', id);
-    for (const id of tags)      p.append('tag', id);
     p.set('page', String(page));
 
     fetch(`/api/software?${p.toString()}`)
@@ -120,13 +118,12 @@ function BrowseContent() {
       })
       .catch(() => setError('Failed to load results.'))
       .finally(() => setLoading(false));
-  }, [q, category, sort, platforms.join(','), hardware.join(','), systems.join(','), tags.join(','), page]);
+  }, [q, category, sort, platforms.join(','), hardware.join(','), systems.join(','), page]);
 
   const platformOptions = (filters?.platforms ?? []).map((p) => ({ id: p.id, name: p.name }));
   const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ id: h.id, name: h.name }));
   const systemOptions   = (filters?.systems ?? []).map((s) => ({ id: s.id, name: s.name }));
-  const tagOptions      = (filters?.tags ?? []).map((t) => ({ id: t.id, name: t.name }));
-  const hasFilters      = q || category || sort || platforms.length || hardware.length || systems.length || tags.length;
+  const hasFilters      = q || category || sort || platforms.length || hardware.length || systems.length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
@@ -150,9 +147,6 @@ function BrowseContent() {
           <MultiSelect label="Platform" options={platformOptions} selected={platforms} onChange={(v) => setMulti('platform', v)} />
           <MultiSelect label="System"   options={systemOptions}   selected={systems}   onChange={(v) => setMulti('system', v)} />
           <MultiSelect label="Hardware" options={hardwareOptions} selected={hardware}  onChange={(v) => setMulti('hardware', v)} />
-          {tagOptions.length > 0 && (
-            <MultiSelect label="Tag" options={tagOptions} selected={tags} onChange={(v) => setMulti('tag', v)} />
-          )}
           {hasFilters && (
             <button
               type="button"

@@ -9,7 +9,6 @@ const TABS = [
   { value: 'NEW_LISTING',  label: 'New Listing' },
   { value: 'EDIT',         label: 'Edit' },
   { value: 'NEW_HARDWARE', label: 'Hardware' },
-  { value: 'NEW_TAG',      label: 'Tag' },
 ];
 
 const TYPE_LABELS: Record<string, string> = {

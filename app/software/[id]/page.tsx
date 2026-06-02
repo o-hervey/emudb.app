@@ -693,23 +693,6 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
             </SidebarSection>
           )}
 
-          {/* Tags */}
-          {software.tags.length > 0 && (
-            <SidebarSection title="Tags">
-              <div className="flex flex-wrap gap-1.5">
-                {software.tags.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/browse?tag=${t.id}`}
-                    className="inline-flex rounded-full bg-[var(--color-accent-surface)] px-2.5 py-0.5 text-xs text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white transition-colors"
-                  >
-                    {t.name}
-                  </Link>
-                ))}
-              </div>
-            </SidebarSection>
-          )}
-
           {/* Hardware */}
           {software.hardware.length > 0 && (
             <SidebarSection title="Hardware">
