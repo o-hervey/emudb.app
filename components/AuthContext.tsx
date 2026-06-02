@@ -7,6 +7,7 @@ interface UserProfile {
   email: string;
   username: string | null;
   isModerator: boolean;
+  isSuperAdmin: boolean;
   createdAt: string;
 }
 

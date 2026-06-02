@@ -45,3 +45,17 @@ export async function requireModerator() {
 
   return { user, profile, error: null };
 }
+
+export async function requireSuperAdmin() {
+  const user = await getSessionUser();
+  if (!user) return { user: null, profile: null, error: unauthorized() };
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: { id: true, isSuperAdmin: true },
+  });
+
+  if (!profile?.isSuperAdmin) return { user, profile, error: forbidden() };
+
+  return { user, profile, error: null };
+}

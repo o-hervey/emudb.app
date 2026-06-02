@@ -77,7 +77,7 @@ export function Header() {
             <>
               {user ? (
                 <>
-                  {user.isModerator && (
+                  {(user.isModerator || user.isSuperAdmin) && (
                     <Link
                       href="/moderation"
                       className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-colors"

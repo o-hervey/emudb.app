@@ -12,6 +12,7 @@ export async function GET() {
       id: true,
       username: true,
       isModerator: true,
+      isSuperAdmin: true,
       createdAt: true,
     },
   });

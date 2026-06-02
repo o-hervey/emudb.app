@@ -82,6 +82,7 @@ model Profile {
   username          String?   @unique
   isActive          Boolean   @default(true) @map("is_active")
   isModerator       Boolean   @default(false) @map("is_moderator")
+  isSuperAdmin      Boolean   @default(false) @map("is_super_admin")
   reportCredibility Float     @default(1.0) @map("report_credibility")
   reportsFiledToday Int       @default(0) @map("reports_filed_today")
   complaintScore    Float     @default(0.0) @map("complaint_score")
