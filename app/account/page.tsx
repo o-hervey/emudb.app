@@ -139,7 +139,12 @@ function MyListCard({
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-medium text-[var(--color-text)] text-sm truncate">{list.name}</h3>
+          <Link
+            href={`/lists/${list.id}`}
+            className="font-medium text-[var(--color-text)] text-sm truncate block hover:text-[var(--color-accent)] transition-colors"
+          >
+            {list.name}
+          </Link>
           {list.description && (
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-2">
               {list.description}

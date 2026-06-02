@@ -6,14 +6,16 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const [{ id }, sessionUser] = await Promise.all([params, getSessionUser()]);
 
-  const list = await prisma.userList.findFirst({
-    where: { id, isPublic: true },
+  const list = await prisma.userList.findUnique({
+    where: { id },
     select: {
       id: true,
       name: true,
       description: true,
+      isPublic: true,
+      ownerId: true,
       createdAt: true,
       updatedAt: true,
       _count: { select: { saves: true, clones: true } },
@@ -31,8 +33,12 @@ export async function GET(
   });
 
   if (!list) return NextResponse.json({ error: "List not found" }, { status: 404 });
+  // Private lists are visible only to their owner
+  if (!list.isPublic && list.ownerId !== sessionUser?.id) {
+    return NextResponse.json({ error: "List not found" }, { status: 404 });
+  }
 
-  const { _count, ...rest } = list;
+  const { ownerId: _ownerId, isPublic: _isPublic, _count, ...rest } = list;
   return NextResponse.json({ ...rest, saveCount: _count.saves, cloneCount: _count.clones });
 }
 
