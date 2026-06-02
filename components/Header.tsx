@@ -85,6 +85,14 @@ export function Header() {
                       Moderation
                     </Link>
                   )}
+                  {user.isSuperAdmin && (
+                    <Link
+                      href="/admin"
+                      className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <Link
                     href="/account"
                     className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"

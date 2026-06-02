@@ -89,7 +89,7 @@ export default function ModerationPage() {
   const [actioning, setActioning] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !user.isModerator)) router.push('/');
+    if (!authLoading && (!user || (!user.isModerator && !user.isSuperAdmin))) router.push('/');
   }, [authLoading, user, router]);
 
   const fetchSubmissions = () => {
@@ -104,7 +104,7 @@ export default function ModerationPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { if (user?.isModerator) fetchSubmissions(); }, [user, activeTab, page]);
+  useEffect(() => { if (user?.isModerator || user?.isSuperAdmin) fetchSubmissions(); }, [user, activeTab, page]);
 
   async function action(id: string, verb: 'approve' | 'reject') {
     setActioning(id);
