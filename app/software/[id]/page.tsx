@@ -171,6 +171,100 @@ function RatingForm({
   );
 }
 
+function AddToListPanel({ softwareId }: { softwareId: string }) {
+  const [lists, setLists] = useState<{ id: string; name: string }[] | null>(null);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [selectedId, setSelectedId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [addedTo, setAddedTo] = useState('');
+
+  useEffect(() => {
+    fetch('/api/account/lists')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data: { id: string; name: string }[]) => {
+        setLists(data);
+        if (data.length > 0) setSelectedId(data[0].id);
+      })
+      .catch(() => setLists([]))
+      .finally(() => setLoadingLists(false));
+  }, []);
+
+  async function handleAdd() {
+    if (!selectedId) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/lists/${selectedId}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ softwareId }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error ?? 'Failed to add.'); return; }
+      setAddedTo(lists?.find((l) => l.id === selectedId)?.name ?? 'list');
+    } catch {
+      setError('Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loadingLists) {
+    return <div className="h-8 rounded-lg bg-[var(--color-surface-raised)] animate-pulse" />;
+  }
+
+  if (addedTo) {
+    return (
+      <p className="text-sm text-emerald-600 dark:text-emerald-400">
+        Added to <span className="font-medium">{addedTo}</span>.{' '}
+        <button
+          type="button"
+          onClick={() => { setAddedTo(''); setError(''); }}
+          className="text-[var(--color-accent)] hover:underline text-xs"
+        >
+          Add to another
+        </button>
+      </p>
+    );
+  }
+
+  if (lists?.length === 0) {
+    return (
+      <p className="text-sm text-[var(--color-text-muted)]">
+        No lists yet.{' '}
+        <Link href="/account?tab=lists" className="text-[var(--color-accent)] hover:underline">
+          Create one
+        </Link>
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      <select
+        aria-label="Select a list"
+        value={selectedId}
+        onChange={(e) => setSelectedId(e.target.value)}
+        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+      >
+        {lists?.map((l) => (
+          <option key={l.id} value={l.id}>{l.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={submitting || !selectedId}
+        className="w-full px-4 py-2 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+      >
+        {submitting ? 'Adding…' : 'Add to list'}
+      </button>
+    </div>
+  );
+}
+
 function PerformanceBreakdown({ ratings }: { ratings: Rating[] }) {
   const byHardware = ratings
     .filter((r) => r.performanceScore !== null && r.hardware)
@@ -453,8 +547,14 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
             </SidebarSection>
           )}
 
-          {/* Anonymous CTA */}
-          {!user && <AnonymousCTA />}
+          {/* Add to list / Anonymous CTA */}
+          {user ? (
+            <SidebarSection title="Add to a list">
+              <AddToListPanel softwareId={software.id} />
+            </SidebarSection>
+          ) : (
+            <AnonymousCTA />
+          )}
         </aside>
       </div>
     </div>
