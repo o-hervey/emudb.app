@@ -70,6 +70,9 @@ export async function POST(
   let listingSystemIds: string[] = [];
   let listingPlatformIds: string[] = [];
   let listingHardwareIds: string[] = [];
+  let editSystemIds: string[] | undefined;
+  let editPlatformIds: string[] | undefined;
+  let editHardwareIds: string[] | undefined;
   let listingDescription: string | null = null;
   let listingWebsiteUrl: string | null = null;
   let listingDownloadUrl: string | null = null;
@@ -185,6 +188,35 @@ export async function POST(
     if (!junction) return badRequest("Submission payload references a tag application that was not found");
   }
 
+  if (submission.type === "EDIT") {
+    if (!submission.targetId) return badRequest("EDIT submission is missing targetId");
+
+    if ("platformIds" in payload) {
+      const r = parsePayloadIds(payload, "platformIds");
+      if (r.error) return r.error;
+      editPlatformIds = r.ids;
+    }
+    if ("systemIds" in payload) {
+      const r = parsePayloadIds(payload, "systemIds");
+      if (r.error) return r.error;
+      editSystemIds = r.ids;
+    }
+    if ("hardwareIds" in payload) {
+      const r = parsePayloadIds(payload, "hardwareIds");
+      if (r.error) return r.error;
+      editHardwareIds = r.ids;
+    }
+
+    const [sysCount, platCount, hwCount] = await Promise.all([
+      editSystemIds?.length   ? prisma.system.count({ where: { id: { in: editSystemIds } } })    : 0,
+      editPlatformIds?.length ? prisma.platform.count({ where: { id: { in: editPlatformIds } } }) : 0,
+      editHardwareIds?.length ? prisma.hardware.count({ where: { id: { in: editHardwareIds } } }) : 0,
+    ]);
+    if (editSystemIds?.length   && sysCount  !== editSystemIds.length)   return badRequest("One or more systems were not found");
+    if (editPlatformIds?.length && platCount !== editPlatformIds.length) return badRequest("One or more platforms were not found");
+    if (editHardwareIds?.length && hwCount   !== editHardwareIds.length) return badRequest("One or more hardware entries were not found");
+  }
+
   await prisma.$transaction(async (tx) => {
     switch (submission.type) {
       case "NEW_LISTING": {
@@ -224,6 +256,7 @@ export async function POST(
       }
 
       case "EDIT": {
+        const softwareId = submission.targetId!;
         const fields: Prisma.SoftwareUpdateInput = {};
         if (payload.name)        fields.name = payload.name as string;
         if (payload.description !== undefined) fields.description = payload.description as string | null;
@@ -234,7 +267,35 @@ export async function POST(
         if (payload.sourceUrl !== undefined)   fields.sourceUrl = payload.sourceUrl as string | null;
         fields.updatedAt = new Date();
 
-        await tx.software.update({ where: { id: submission.targetId! }, data: fields });
+        await tx.software.update({ where: { id: softwareId }, data: fields });
+
+        if (editPlatformIds !== undefined) {
+          await tx.softwarePlatform.deleteMany({ where: { softwareId } });
+          if (editPlatformIds.length > 0) {
+            await tx.softwarePlatform.createMany({
+              data: editPlatformIds.map((platformId) => ({ softwareId, platformId })),
+              skipDuplicates: true,
+            });
+          }
+        }
+        if (editSystemIds !== undefined) {
+          await tx.softwareSystem.deleteMany({ where: { softwareId } });
+          if (editSystemIds.length > 0) {
+            await tx.softwareSystem.createMany({
+              data: editSystemIds.map((systemId) => ({ softwareId, systemId })),
+              skipDuplicates: true,
+            });
+          }
+        }
+        if (editHardwareIds !== undefined) {
+          await tx.softwareHardware.deleteMany({ where: { softwareId } });
+          if (editHardwareIds.length > 0) {
+            await tx.softwareHardware.createMany({
+              data: editHardwareIds.map((hardwareId) => ({ softwareId, hardwareId })),
+              skipDuplicates: true,
+            });
+          }
+        }
         break;
       }
 

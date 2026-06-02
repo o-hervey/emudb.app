@@ -3,6 +3,8 @@
 import { AnonymousCTA } from '@/components/AnonymousCTA';
 import { useAuth } from '@/components/AuthContext';
 import { CategoryBadge } from '@/components/CategoryBadge';
+import { useFilters } from '@/components/FiltersContext';
+import { MultiSelect } from '@/components/MultiSelect';
 import { SidebarSection } from '@/components/SidebarSection';
 import { SoftwareIcon } from '@/components/SoftwareIcon';
 import { StarBreakdown, StarInput, StarRating } from '@/components/StarRating';
@@ -46,6 +48,7 @@ const STATUSES = [
 const inputCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors';
 
 function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: () => void }) {
+  const { filters } = useFilters();
   const [name, setName] = useState(software.name);
   const [description, setDescription] = useState(software.description ?? '');
   const [category, setCategory] = useState(software.category);
@@ -53,6 +56,9 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
   const [websiteUrl, setWebsiteUrl] = useState(software.websiteUrl ?? '');
   const [downloadUrl, setDownloadUrl] = useState(software.downloadUrl ?? '');
   const [sourceUrl, setSourceUrl] = useState(software.sourceUrl ?? '');
+  const [platformIds, setPlatformIds] = useState<string[]>(software.platforms.map((p) => p.id));
+  const [systemIds, setSystemIds] = useState<string[]>(software.systems.map((s) => s.id));
+  const [hardwareIds, setHardwareIds] = useState<string[]>(software.hardware.map((h) => h.id));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -76,6 +82,9 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
             websiteUrl: websiteUrl.trim() || null,
             downloadUrl: downloadUrl.trim() || null,
             sourceUrl: sourceUrl.trim() || null,
+            platformIds,
+            systemIds,
+            hardwareIds,
           },
         }),
       });
@@ -150,6 +159,11 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
         <select id="edit-status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls}>
           {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+      </div>
+      <div className="space-y-3 border-t border-[var(--color-border)] pt-4">
+        <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
+        <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
+        <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
       </div>
       <button
         type="submit"

@@ -189,9 +189,6 @@ async function handleEdit(userId: string, body: Record<string, unknown>) {
     fields[key] = value;
   }
 
-  if (Object.keys(fields).length === 0) {
-    return NextResponse.json({ error: "No editable fields provided" }, { status: 400 });
-  }
   if ("category" in fields && !Object.values(Category).includes(fields.category as Category)) {
     return NextResponse.json({ error: "Invalid category" }, { status: 400 });
   }
@@ -202,13 +199,55 @@ async function handleEdit(userId: string, body: Record<string, unknown>) {
   if ("downloadUrl" in fields && !isAllowedUrl(fields.downloadUrl)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
   if ("sourceUrl" in fields   && !isAllowedUrl(fields.sourceUrl))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
 
+  // Array relation fields — optional, included only when present in payload
+  const p = payload as Record<string, unknown>;
+  let editPlatformIds: string[] | undefined;
+  let editSystemIds: string[] | undefined;
+  let editHardwareIds: string[] | undefined;
+
+  if ("platformIds" in p) {
+    const r = normalizeIdList(p.platformIds, "platformIds");
+    if (r.error) return r.error;
+    editPlatformIds = r.value;
+  }
+  if ("systemIds" in p) {
+    const r = normalizeIdList(p.systemIds, "systemIds");
+    if (r.error) return r.error;
+    editSystemIds = r.value;
+  }
+  if ("hardwareIds" in p) {
+    const r = normalizeIdList(p.hardwareIds, "hardwareIds");
+    if (r.error) return r.error;
+    editHardwareIds = r.value;
+  }
+
+  const hasArrayChanges = editPlatformIds !== undefined || editSystemIds !== undefined || editHardwareIds !== undefined;
+  if (Object.keys(fields).length === 0 && !hasArrayChanges) {
+    return NextResponse.json({ error: "No editable fields provided" }, { status: 400 });
+  }
+
+  // Validate that referenced IDs exist
+  const [systemCount, platformCount, hardwareCount] = await Promise.all([
+    editSystemIds?.length   ? prisma.system.count({ where: { id: { in: editSystemIds } } })   : 0,
+    editPlatformIds?.length ? prisma.platform.count({ where: { id: { in: editPlatformIds } } }) : 0,
+    editHardwareIds?.length ? prisma.hardware.count({ where: { id: { in: editHardwareIds } } }) : 0,
+  ]);
+  if (editSystemIds?.length   && systemCount   !== editSystemIds.length)   return NextResponse.json({ error: "One or more systems were not found" }, { status: 400 });
+  if (editPlatformIds?.length && platformCount !== editPlatformIds.length) return NextResponse.json({ error: "One or more platforms were not found" }, { status: 400 });
+  if (editHardwareIds?.length && hardwareCount !== editHardwareIds.length) return NextResponse.json({ error: "One or more hardware entries were not found" }, { status: 400 });
+
+  const finalPayload: Record<string, unknown> = { ...fields };
+  if (editPlatformIds !== undefined) finalPayload.platformIds = editPlatformIds;
+  if (editSystemIds   !== undefined) finalPayload.systemIds   = editSystemIds;
+  if (editHardwareIds !== undefined) finalPayload.hardwareIds = editHardwareIds;
+
   const submission = await prisma.submission.create({
     data: {
       type: "EDIT",
       submittedBy: userId,
       status: "PENDING",
       targetId,
-      payload: fields as Prisma.InputJsonValue,
+      payload: finalPayload as Prisma.InputJsonValue,
     },
     select: { id: true, type: true, status: true, targetId: true, createdAt: true },
   });
