@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 const CATEGORIES = [
   { value: 'EMULATOR',            label: 'Emulator' },
   { value: 'FRONTEND',            label: 'Frontend' },
-  { value: 'OPERATING_SYSTEM',    label: 'Operating System' },
+  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
   { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
   { value: 'UTILITY',             label: 'Utility' },
   { value: 'SCRAPER',             label: 'Scraper' },

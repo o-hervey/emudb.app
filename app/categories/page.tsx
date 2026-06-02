@@ -15,7 +15,7 @@ const CATEGORIES = [
   },
   {
     value: 'OPERATING_SYSTEM',
-    label: 'Operating Systems',
+    label: 'OS & CFW',
     description: 'Full OS distributions built around emulation, often for handhelds.',
     color: '#F5822A',
   },

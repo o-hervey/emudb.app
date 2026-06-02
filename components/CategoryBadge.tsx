@@ -14,7 +14,7 @@ const STYLES: Record<string, { bg: string; text: string }> = {
 const LABELS: Record<string, string> = {
   EMULATOR:            'Emulator',
   FRONTEND:            'Frontend',
-  OPERATING_SYSTEM:    'OS',
+  OPERATING_SYSTEM:    'OS & CFW',
   COMPATIBILITY_LAYER: 'Compat Layer',
   UTILITY:             'Utility',
   SCRAPER:             'Scraper',
