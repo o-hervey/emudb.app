@@ -84,10 +84,14 @@ export function Header() {
                       Moderation
                     </Link>
                   )}
-                  <span className="hidden sm:inline text-xs text-[var(--color-text-muted)] px-2">
-                    {user.username ?? user.email}
-                  </span>
+                  <Link
+                    href="/account"
+                    className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
+                  >
+                    Account
+                  </Link>
                   <button
+                    type="button"
                     onClick={signOut}
                     className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)] transition-colors"
                   >
