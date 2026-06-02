@@ -2,7 +2,9 @@ import { queryIGDB } from '@/lib/igdb';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-export const revalidate = 86400; // re-fetch from IGDB once per day
+// Must be force-dynamic: this route calls Prisma + IGDB at request time.
+// revalidate + dynamic data sources causes Next.js to cache an empty {} at build time.
+export const dynamic = 'force-dynamic';
 
 interface IGDBPlatform {
   id: number;

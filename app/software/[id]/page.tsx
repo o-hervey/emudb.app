@@ -48,7 +48,7 @@ const STATUSES = [
 const inputCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none transition-colors';
 
 function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: () => void }) {
-  const { filters } = useFilters();
+  const { filters, loading: filtersLoading } = useFilters();
   const [name, setName] = useState(software.name);
   const [description, setDescription] = useState(software.description ?? '');
   const [category, setCategory] = useState(software.category);
@@ -88,11 +88,15 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
           },
         }),
       });
+      if (res.status === 401) {
+        setError('Your session has expired — please sign out and sign back in, then try again.');
+        return;
+      }
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Submission failed'); return; }
       setSubmitted(true);
     } catch {
-      setError('Something went wrong.');
+      setError('Something went wrong. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -161,9 +165,19 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
         </select>
       </div>
       <div className="space-y-3 border-t border-[var(--color-border)] pt-4">
-        <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
-        <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
-        <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
+        {filtersLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-10 rounded-lg bg-[var(--color-surface-raised)] animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
+            <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
+            <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
+          </>
+        )}
       </div>
       <button
         type="submit"
