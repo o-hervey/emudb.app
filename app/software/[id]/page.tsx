@@ -4,6 +4,7 @@ import { AnonymousCTA } from '@/components/AnonymousCTA';
 import { useAuth } from '@/components/AuthContext';
 import { CategoryBadge } from '@/components/CategoryBadge';
 import { useFilters } from '@/components/FiltersContext';
+import { HardwareMultiSelect } from '@/components/HardwareMultiSelect';
 import { MultiSelect } from '@/components/MultiSelect';
 import { SidebarSection } from '@/components/SidebarSection';
 import { SoftwareIcon } from '@/components/SoftwareIcon';
@@ -27,16 +28,19 @@ const STATUS_CLASSES: Record<string, string> = {
 type TabKey = 'overview' | 'platforms' | 'systems';
 
 const CATEGORIES = [
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
   { value: 'EMULATOR',            label: 'Emulator' },
   { value: 'FRONTEND',            label: 'Frontend' },
-  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
-  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
-  { value: 'UTILITY',             label: 'Utility' },
-  { value: 'SCRAPER',             label: 'Scraper' },
-  { value: 'SHADER',              label: 'Shader' },
-  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'GAME_STATE_TOOL',     label: 'Game State Tool' },
   { value: 'INPUT_CONTROLLERS',   label: 'Input & Controllers' },
+  { value: 'MEDIA_SCRAPER',       label: 'Media Scraper' },
+  { value: 'NETPLAY',             label: 'Netplay' },
+  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
+  { value: 'ROM_MANAGER',         label: 'ROM Manager' },
+  { value: 'SHADER',              label: 'Shader' },
   { value: 'STREAMING',           label: 'Streaming' },
+  { value: 'UTILITY',             label: 'Utility' },
 ];
 
 const STATUSES = [
@@ -175,7 +179,7 @@ function EditForm({ software, onClose }: { software: SoftwareDetail; onClose: ()
           <>
             <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
             <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
-            <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
+            <HardwareMultiSelect label="Hardware" options={filters?.hardware ?? []} selected={hardwareIds} onChange={setHardwareIds} />
           </>
         )}
       </div>

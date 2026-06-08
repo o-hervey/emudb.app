@@ -2,22 +2,26 @@
 
 import { useAuth } from '@/components/AuthContext';
 import { useFilters } from '@/components/FiltersContext';
+import { HardwareMultiSelect } from '@/components/HardwareMultiSelect';
 import { MultiSelect } from '@/components/MultiSelect';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const CATEGORIES = [
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
   { value: 'EMULATOR',            label: 'Emulator' },
   { value: 'FRONTEND',            label: 'Frontend' },
+  { value: 'GAME_STATE_TOOL',     label: 'Game State Tool' },
+  { value: 'INPUT_CONTROLLERS',   label: 'Input & Controllers' },
+  { value: 'MEDIA_SCRAPER',       label: 'Media Scraper' },
+  { value: 'NETPLAY',             label: 'Netplay' },
   { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
-  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
-  { value: 'UTILITY',             label: 'Utility' },
-  { value: 'SCRAPER',             label: 'Scraper' },
+  { value: 'ROM_MANAGER',         label: 'ROM Manager' },
   { value: 'SHADER',              label: 'Shader' },
-  { value: 'COMPANION_APP',       label: 'Companion App' },
-  { value: 'INPUT_CONTROLLERS',   label: 'Input Controllers' },
   { value: 'STREAMING',           label: 'Streaming' },
+  { value: 'UTILITY',             label: 'Utility' },
 ];
 
 const STATUSES = [
@@ -194,7 +198,7 @@ export default function SubmitPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Compatibility</p>
           <MultiSelect label="Platforms" options={filters?.platforms ?? []} selected={platformIds} onChange={setPlatformIds} />
           <MultiSelect label="Systems"   options={filters?.systems ?? []}   selected={systemIds}   onChange={setSystemIds} />
-          <MultiSelect label="Hardware"  options={filters?.hardware ?? []}  selected={hardwareIds} onChange={setHardwareIds} />
+          <HardwareMultiSelect label="Hardware" options={filters?.hardware ?? []} selected={hardwareIds} onChange={setHardwareIds} />
         </div>
 
         <div className="pt-4 border-t border-[var(--color-border)]">

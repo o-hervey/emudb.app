@@ -12,12 +12,15 @@ enum Category {
   FRONTEND
   OPERATING_SYSTEM
   COMPATIBILITY_LAYER
-  UTILITY
-  SCRAPER
+  ROM_MANAGER
+  MEDIA_SCRAPER
+  GAME_STATE_TOOL
+  STREAMING
+  NETPLAY
+  INPUT_CONTROLLERS
   SHADER
   COMPANION_APP
-  INPUT_CONTROLLERS
-  STREAMING
+  UTILITY
 }
 
 enum SoftwareStatus {
@@ -39,6 +42,7 @@ enum PlatformGroup {
   MACOS
   LINUX
   MOBILE
+  CONSOLE
   OTHER
 }
 
@@ -47,6 +51,7 @@ enum HardwareType {
   SBC
   MODDED_CONSOLE
   DESKTOP_ARCHITECTURE
+  FPGA
 }
 
 enum SubmissionType {
@@ -143,8 +148,9 @@ model Platform {
   name  String
   group PlatformGroup
 
-  software SoftwarePlatform[]
-  hardware Hardware[]
+  software        SoftwarePlatform[]
+  primaryHardware Hardware[]
+  hardware        HardwarePlatform[]
 
   @@map("platforms")
 }
@@ -160,8 +166,20 @@ model Hardware {
   software    SoftwareHardware[]
   ratings     Rating[]
   listEntries UserListEntry[]
+  platforms   HardwarePlatform[]
 
   @@map("hardware")
+}
+
+model HardwarePlatform {
+  hardwareId String @db.Uuid @map("hardware_id")
+  platformId String @db.Uuid @map("platform_id")
+
+  hardware   Hardware @relation(fields: [hardwareId], references: [id])
+  platform   Platform @relation(fields: [platformId], references: [id])
+
+  @@id([hardwareId, platformId])
+  @@map("hardware_platforms")
 }
 
 model Tag {

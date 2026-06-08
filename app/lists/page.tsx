@@ -6,16 +6,19 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 const CATEGORIES = [
+  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
   { value: 'EMULATOR',            label: 'Emulator' },
   { value: 'FRONTEND',            label: 'Frontend' },
-  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
-  { value: 'COMPATIBILITY_LAYER', label: 'Compatibility Layer' },
-  { value: 'UTILITY',             label: 'Utility' },
-  { value: 'SCRAPER',             label: 'Scraper' },
-  { value: 'SHADER',              label: 'Shader' },
-  { value: 'COMPANION_APP',       label: 'Companion App' },
+  { value: 'GAME_STATE_TOOL',     label: 'Game State Tool' },
   { value: 'INPUT_CONTROLLERS',   label: 'Input & Controllers' },
+  { value: 'MEDIA_SCRAPER',       label: 'Media Scraper' },
+  { value: 'NETPLAY',             label: 'Netplay' },
+  { value: 'OPERATING_SYSTEM',    label: 'OS & CFW' },
+  { value: 'ROM_MANAGER',         label: 'ROM Manager' },
+  { value: 'SHADER',              label: 'Shader' },
   { value: 'STREAMING',           label: 'Streaming' },
+  { value: 'UTILITY',             label: 'Utility' },
 ];
 
 const SORT_OPTIONS = [

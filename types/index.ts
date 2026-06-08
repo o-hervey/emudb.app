@@ -16,6 +16,7 @@ export interface Hardware {
   name: string;
   manufacturer?: string | null;
   type: string;
+  platformGroup?: string | null;
 }
 
 export interface Tag {

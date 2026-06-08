@@ -6,18 +6,24 @@ import { NextResponse } from "next/server";
 export const revalidate = 3600;
 
 export async function GET() {
-  const [platforms, systems, hardware, tags] = await Promise.all([
+  const [platformsRaw, systemsRaw, hardwareRaw, tags] = await Promise.all([
     prisma.platform.findMany({
       select: { id: true, name: true, group: true },
-      orderBy: [{ group: "asc" }, { name: "asc" }],
+      orderBy: { name: "asc" },
     }),
     prisma.system.findMany({
       select: { id: true, name: true, manufacturer: true, type: true },
-      orderBy: [{ type: "asc" }, { name: "asc" }],
+      orderBy: { name: "asc" },
     }),
     prisma.hardware.findMany({
-      select: { id: true, name: true, manufacturer: true, type: true },
-      orderBy: [{ manufacturer: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        manufacturer: true,
+        type: true,
+        primaryPlatform: { select: { group: true } },
+      },
+      orderBy: { name: "asc" },
     }),
     prisma.tag.findMany({
       where: { approved: true },
@@ -26,5 +32,10 @@ export async function GET() {
     }),
   ]);
 
-  return NextResponse.json({ platforms, systems, hardware, tags });
+  const hardware = hardwareRaw.map(({ primaryPlatform, ...h }) => ({
+    ...h,
+    platformGroup: primaryPlatform?.group ?? null,
+  }));
+
+  return NextResponse.json({ platforms: platformsRaw, systems: systemsRaw, hardware, tags });
 }

@@ -2,6 +2,18 @@ import Link from 'next/link';
 
 const CATEGORIES = [
   {
+    value: 'COMPANION_APP',
+    label: 'Companion Apps',
+    description: 'Apps that extend or complement an emulator\'s functionality.',
+    color: '#AA2050',
+  },
+  {
+    value: 'COMPATIBILITY_LAYER',
+    label: 'Compatibility Layers',
+    description: 'Tools that translate one platform\'s instructions for another (e.g. Wine).',
+    color: '#C4A200',
+  },
+  {
     value: 'EMULATOR',
     label: 'Emulators',
     description: 'Software that mimics another system\'s hardware to run its software.',
@@ -14,40 +26,10 @@ const CATEGORIES = [
     color: '#8868F0',
   },
   {
-    value: 'OPERATING_SYSTEM',
-    label: 'OS & CFW',
-    description: 'Full OS distributions built around emulation, often for handhelds.',
-    color: '#F5822A',
-  },
-  {
-    value: 'COMPATIBILITY_LAYER',
-    label: 'Compatibility Layers',
-    description: 'Tools that translate one platform\'s instructions for another (e.g. Wine).',
-    color: '#C4A200',
-  },
-  {
-    value: 'UTILITY',
-    label: 'Utilities',
-    description: 'Supporting tools — ROM managers, patchers, save editors, and more.',
-    color: '#C4A200',
-  },
-  {
-    value: 'SCRAPER',
-    label: 'Scrapers',
-    description: 'Tools that fetch artwork, metadata, and game info for your library.',
+    value: 'GAME_STATE_TOOL',
+    label: 'Game State Tools',
+    description: 'Save editors, achievement tools, and game state managers.',
     color: '#1A7A40',
-  },
-  {
-    value: 'SHADER',
-    label: 'Shaders & Filters',
-    description: 'GPU shaders and CRT filter packs to enhance the visual output.',
-    color: '#3A3AB0',
-  },
-  {
-    value: 'COMPANION_APP',
-    label: 'Companion Apps',
-    description: 'Apps that extend or complement an emulator\'s functionality.',
-    color: '#AA2050',
   },
   {
     value: 'INPUT_CONTROLLERS',
@@ -56,10 +38,46 @@ const CATEGORIES = [
     color: '#1A5580',
   },
   {
+    value: 'MEDIA_SCRAPER',
+    label: 'Media Scrapers',
+    description: 'Tools that fetch artwork, metadata, and game info for your library.',
+    color: '#1A7A40',
+  },
+  {
+    value: 'NETPLAY',
+    label: 'Netplay',
+    description: 'Tools for playing emulated games online with others.',
+    color: '#6030A0',
+  },
+  {
+    value: 'OPERATING_SYSTEM',
+    label: 'OS & CFW',
+    description: 'Full OS distributions built around emulation, often for handhelds.',
+    color: '#F5822A',
+  },
+  {
+    value: 'ROM_MANAGER',
+    label: 'ROM Managers',
+    description: 'Organise, verify, and manage ROM collections.',
+    color: '#C4A200',
+  },
+  {
+    value: 'SHADER',
+    label: 'Shaders & Filters',
+    description: 'GPU shaders and CRT filter packs to enhance the visual output.',
+    color: '#3A3AB0',
+  },
+  {
     value: 'STREAMING',
     label: 'Streaming',
     description: 'Stream games from one device to another over a network.',
     color: '#6030A0',
+  },
+  {
+    value: 'UTILITY',
+    label: 'Utilities',
+    description: 'Supporting tools — patchers, converters, and miscellaneous helpers.',
+    color: '#C4A200',
   },
 ];
 

@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: 'Lists',       href: '/lists' },
   { label: 'Categories',  href: '/categories' },
   { label: 'Systems',     href: '/systems' },
+  { label: 'Hardware',    href: '/hardware' },
   { label: 'Contribute',  href: '/submit' },
 ];
 
