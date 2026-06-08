@@ -27,9 +27,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await prisma.profile.findUnique({ where: { username } });
-    if (existing) {
-      return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+    try {
+      const existing = await prisma.profile.findUnique({ where: { username } });
+      if (existing) {
+        return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+      }
+    } catch (err) {
+      console.error("[signup] prisma username check failed:", err);
+      return NextResponse.json({ error: "Database error. Please try again." }, { status: 500 });
     }
   }
 
@@ -42,14 +47,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // If a username was provided, set it on the profile the trigger just created.
-  // The trigger runs synchronously inside the same transaction as the INSERT on
-  // auth.users, so the profile row should exist by the time we get here.
   if (username && data.user) {
-    await prisma.profile.update({
-      where: { id: data.user.id },
-      data: { username },
-    });
+    try {
+      // Use upsert in case the trigger that creates the profile row is slightly
+      // delayed — update alone throws P2025 if the row doesn't exist yet.
+      await prisma.profile.upsert({
+        where: { id: data.user.id },
+        update: { username },
+        create: { id: data.user.id, username },
+      });
+    } catch (err) {
+      console.error("[signup] prisma profile upsert failed:", err);
+      // Auth user was created; don't surface this as a fatal error.
+    }
   }
 
   return NextResponse.json({ user: { id: data.user?.id, email: data.user?.email } });
