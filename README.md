@@ -12,7 +12,7 @@
 
 Emulation resources are scattered. Answers to basic questions — which emulator handles PS2 well on a Steam Deck, which frontend works on muOS, what are the dual-screen launcher options for Android — are buried across YouTube guides, Reddit threads, and Discord servers.
 
-EmuDB is a filterable directory of emulators, frontends, operating systems, utilities, scrapers, shaders, and everything adjacent. Every listing links directly to the official source. Ratings are split between overall software quality and hardware-specific performance, so you can see not just whether something is generally well-regarded, but whether it runs well on your exact device.
+EmuDB is a filterable directory of emulators, frontends, operating systems, ROM managers, media scrapers, shaders, netplay tools, and everything adjacent. Every listing links directly to the official source. Ratings are split between overall software quality and hardware-specific performance, so you can see not just whether something is generally well-regarded, but whether it runs well on your exact device.
 
 ## Stack
 
