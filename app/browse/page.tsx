@@ -126,7 +126,7 @@ function BrowseContent() {
   const platformOptions = (filters?.platforms ?? []).map((p) => ({ id: p.id, name: p.name }));
   const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ id: h.id, name: h.name }));
   const systemOptions   = (filters?.systems ?? []).map((s) => ({ id: s.id, name: s.name }));
-  const hasFilters      = q || category || sort || platforms.length || hardware.length || systems.length;
+  const hasFilters      = !!(q || category || sort || platforms.length || hardware.length || systems.length);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
