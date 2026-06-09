@@ -31,10 +31,7 @@ async function getSoftwareMeta(id: string) {
       sourceUrl: true,
       avgQuality: true,
       platforms: { select: { platform: { select: { name: true } } } },
-      ratings: {
-        where: { qualityScore: { not: null } },
-        select: { qualityScore: true },
-      },
+      qualityRatings: { select: { id: true } },
     },
   });
 }
@@ -82,7 +79,7 @@ export default async function SoftwareLayout({
 
   const category = CATEGORY_LABELS[sw.category] ?? sw.category;
   const platformNames = sw.platforms.map((p) => p.platform.name);
-  const ratingCount = sw.ratings.length;
+  const ratingCount = sw.qualityRatings.length;
   const sameAs = [sw.websiteUrl, sw.sourceUrl].filter(Boolean) as string[];
 
   const jsonLd: Record<string, unknown> = {

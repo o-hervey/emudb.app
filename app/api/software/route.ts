@@ -67,9 +67,8 @@ export async function GET(req: NextRequest) {
       where: { approved: true },
       select: { tag: { select: { id: true, name: true } } },
     },
-    ratings: {
-      select: { qualityScore: true, performanceScore: true },
-    },
+    avgQuality: true,
+    _count: { select: { qualityRatings: true } },
   } satisfies Prisma.SoftwareSelect;
   type SoftwareRow = Prisma.SoftwareGetPayload<{ select: typeof softwareSelect }>;
 
@@ -77,7 +76,7 @@ export async function GET(req: NextRequest) {
     sort === "top_rated"                   ? { avgQuality: { sort: "desc", nulls: "last" } } :
     sort === "newest" || sort === "recent" ? { createdAt: "desc" } :
     sort === "oldest"                      ? { createdAt: "asc" } :
-    sort === "most_rated"                  ? { ratings: { _count: "desc" } } :
+    sort === "most_rated"                  ? { qualityRatings: { _count: "desc" } } :
     sort === "za"                          ? { name: "desc" } :
                                              { name: "asc" };
 
@@ -98,16 +97,9 @@ export async function GET(req: NextRequest) {
     systems: s.systems.map((p) => p.system),
     hardware: s.hardware.map((p) => p.hardware),
     tags: s.tags.map((p) => p.tag),
-    avgQuality: (() => {
-      const rated = s.ratings.filter((r) => r.qualityScore !== null);
-      return rated.length > 0 ? rated.reduce((sum, r) => sum + r.qualityScore!, 0) / rated.length : null;
-    })(),
-    avgPerformance: (() => {
-      const rated = s.ratings.filter((r) => r.performanceScore !== null);
-      return rated.length > 0 ? rated.reduce((sum, r) => sum + r.performanceScore!, 0) / rated.length : null;
-    })(),
-    ratingCount: s.ratings.length,
-    ratings: undefined,
+    avgQuality: s.avgQuality,
+    avgPerformance: null,
+    ratingCount: s._count.qualityRatings,
   }));
 
   return NextResponse.json({
