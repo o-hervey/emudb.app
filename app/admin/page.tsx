@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type Tab = 'overview' | 'users' | 'seed' | 'reports';
 
@@ -312,18 +312,16 @@ function SystemsSection() {
     reload();
   }
 
-  const showForm = showAdd || editingId !== null;
-
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-[var(--color-text)]">Systems</h3>
-        {!showForm && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
+        {!showAdd && editingId === null && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
       </div>
 
-      {showForm && (
+      {showAdd && (
         <div className="rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
-          <p className="text-sm font-medium text-[var(--color-text)]">{editingId ? 'Edit System' : 'New System'}</p>
+          <p className="text-sm font-medium text-[var(--color-text)]">New System</p>
           <FieldRow label="Name"><input className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
           <FieldRow label="Manufacturer"><input className={input()} value={form.manufacturer} onChange={e => setForm(f => ({ ...f, manufacturer: e.target.value }))} placeholder="Optional" /></FieldRow>
           <FieldRow label="Type">
@@ -347,12 +345,35 @@ function SystemsSection() {
               {items.length === 0
                 ? <tr><td colSpan={4} className="px-4 py-8 text-center text-[var(--color-text-muted)]">No systems yet.</td></tr>
                 : items.map(item => (
-                    <tr key={item.id} className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
-                      <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.manufacturer ?? '—'}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.type}</td>
-                      <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
-                    </tr>
+                    <React.Fragment key={item.id}>
+                      <tr className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
+                        <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.manufacturer ?? '—'}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.type}</td>
+                        <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
+                      </tr>
+                      {editingId === item.id && (
+                        <tr>
+                          <td colSpan={4} className="p-0">
+                            <div className="m-3 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
+                              <p className="text-sm font-medium text-[var(--color-text)]">Edit System</p>
+                              <FieldRow label="Name"><input title="Name" className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
+                              <FieldRow label="Manufacturer"><input className={input()} value={form.manufacturer} onChange={e => setForm(f => ({ ...f, manufacturer: e.target.value }))} placeholder="Optional" /></FieldRow>
+                              <FieldRow label="Type">
+                                <select title="Type" className={input()} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                                  {SYSTEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                              </FieldRow>
+                              {formError && <p className="text-sm text-red-500">{formError}</p>}
+                              <div className="flex gap-2">
+                                <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+                                <Btn onClick={cancel}>Cancel</Btn>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
               }
             </tbody>
@@ -409,21 +430,19 @@ function PlatformsSection() {
     reload();
   }
 
-  const showForm = showAdd || editingId !== null;
-
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-[var(--color-text)]">Platforms</h3>
-        {!showForm && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
+        {!showAdd && editingId === null && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
       </div>
 
-      {showForm && (
+      {showAdd && (
         <div className="rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
-          <p className="text-sm font-medium text-[var(--color-text)]">{editingId ? 'Edit Platform' : 'New Platform'}</p>
-          <FieldRow label="Name"><input className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
+          <p className="text-sm font-medium text-[var(--color-text)]">New Platform</p>
+          <FieldRow label="Name"><input title="Name" className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
           <FieldRow label="Group">
-            <select className={input()} value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))}>
+            <select title="Group" className={input()} value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))}>
               {PLATFORM_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </FieldRow>
@@ -443,11 +462,33 @@ function PlatformsSection() {
               {items.length === 0
                 ? <tr><td colSpan={3} className="px-4 py-8 text-center text-[var(--color-text-muted)]">No platforms yet.</td></tr>
                 : items.map(item => (
-                    <tr key={item.id} className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
-                      <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.group}</td>
-                      <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
-                    </tr>
+                    <React.Fragment key={item.id}>
+                      <tr className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
+                        <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.group}</td>
+                        <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
+                      </tr>
+                      {editingId === item.id && (
+                        <tr>
+                          <td colSpan={3} className="p-0">
+                            <div className="m-3 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
+                              <p className="text-sm font-medium text-[var(--color-text)]">Edit Platform</p>
+                              <FieldRow label="Name"><input title="Name" className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
+                              <FieldRow label="Group">
+                                <select title="Group" className={input()} value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))}>
+                                  {PLATFORM_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+                                </select>
+                              </FieldRow>
+                              {formError && <p className="text-sm text-red-500">{formError}</p>}
+                              <div className="flex gap-2">
+                                <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+                                <Btn onClick={cancel}>Cancel</Btn>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
               }
             </tbody>
@@ -514,27 +555,25 @@ function HardwareSection() {
     reload();
   }
 
-  const showForm = showAdd || editingId !== null;
-
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-[var(--color-text)]">Hardware</h3>
-        {!showForm && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
+        {!showAdd && editingId === null && <Btn variant="primary" onClick={startAdd}>Add New</Btn>}
       </div>
 
-      {showForm && (
+      {showAdd && (
         <div className="rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
-          <p className="text-sm font-medium text-[var(--color-text)]">{editingId ? 'Edit Hardware' : 'New Hardware'}</p>
-          <FieldRow label="Name"><input className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
+          <p className="text-sm font-medium text-[var(--color-text)]">New Hardware</p>
+          <FieldRow label="Name"><input title="Name" className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
           <FieldRow label="Manufacturer"><input className={input()} value={form.manufacturer} onChange={e => setForm(f => ({ ...f, manufacturer: e.target.value }))} placeholder="Optional" /></FieldRow>
           <FieldRow label="Type">
-            <select className={input()} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+            <select title="Type" className={input()} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
               {HARDWARE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </FieldRow>
           <FieldRow label="Platform">
-            <select className={input()} value={form.primaryPlatformId} onChange={e => setForm(f => ({ ...f, primaryPlatformId: e.target.value }))}>
+            <select title="Platform" className={input()} value={form.primaryPlatformId} onChange={e => setForm(f => ({ ...f, primaryPlatformId: e.target.value }))}>
               <option value="">None</option>
               {platforms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -555,13 +594,42 @@ function HardwareSection() {
               {items.length === 0
                 ? <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--color-text-muted)]">No hardware yet.</td></tr>
                 : items.map(item => (
-                    <tr key={item.id} className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
-                      <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.manufacturer ?? '—'}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.type}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.primaryPlatform?.name ?? '—'}</td>
-                      <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
-                    </tr>
+                    <React.Fragment key={item.id}>
+                      <tr className={editingId === item.id ? 'bg-[var(--color-accent-surface)]' : ''}>
+                        <td className="px-4 py-3 font-medium text-[var(--color-text)]">{item.name}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.manufacturer ?? '—'}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.type}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">{item.primaryPlatform?.name ?? '—'}</td>
+                        <td className="px-4 py-3"><div className="flex gap-1.5 justify-end"><Btn onClick={() => startEdit(item)}>Edit</Btn><Btn variant="danger" onClick={() => del(item.id, item.name)}>Delete</Btn></div></td>
+                      </tr>
+                      {editingId === item.id && (
+                        <tr>
+                          <td colSpan={5} className="p-0">
+                            <div className="m-3 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-4 space-y-3">
+                              <p className="text-sm font-medium text-[var(--color-text)]">Edit Hardware</p>
+                              <FieldRow label="Name"><input title="Name" className={input()} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FieldRow>
+                              <FieldRow label="Manufacturer"><input className={input()} value={form.manufacturer} onChange={e => setForm(f => ({ ...f, manufacturer: e.target.value }))} placeholder="Optional" /></FieldRow>
+                              <FieldRow label="Type">
+                                <select title="Type" className={input()} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                                  {HARDWARE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                              </FieldRow>
+                              <FieldRow label="Platform">
+                                <select title="Platform" className={input()} value={form.primaryPlatformId} onChange={e => setForm(f => ({ ...f, primaryPlatformId: e.target.value }))}>
+                                  <option value="">None</option>
+                                  {platforms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                              </FieldRow>
+                              {formError && <p className="text-sm text-red-500">{formError}</p>}
+                              <div className="flex gap-2">
+                                <Btn variant="primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>
+                                <Btn onClick={cancel}>Cancel</Btn>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
               }
             </tbody>
