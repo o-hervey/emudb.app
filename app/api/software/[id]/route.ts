@@ -41,7 +41,7 @@ export async function GET(
           comment: true,
           createdAt: true,
           hardware: { select: { id: true, name: true } },
-          user: { select: { id: true, username: true } },
+          user: { select: { username: true } },
         },
         orderBy: { createdAt: "desc" },
         take: 50,
@@ -64,15 +64,17 @@ export async function GET(
       websiteUrl: true,
       downloadUrl: true,
       sourceUrl: true,
+      avgQuality: true,
       createdAt: true,
       updatedAt: true,
       platforms: { select: { platform: { select: { id: true, name: true, group: true } } } },
       systems: { select: { system: { select: { id: true, name: true, manufacturer: true, type: true } } } },
       hardware: { select: { hardware: { select: { id: true, name: true, manufacturer: true, type: true } } } },
       tags: { where: { approved: true }, select: { tag: { select: { id: true, name: true } } } },
+      _count: { select: { ratings: true } },
     },
     take: 4,
-    orderBy: { createdAt: "desc" },
+    orderBy: { avgQuality: { sort: "desc", nulls: "last" } },
   });
 
   const [qualityAggregate, performanceAggregate, ratingCount] = await Promise.all([
@@ -96,15 +98,14 @@ export async function GET(
     avgQuality: qualityAggregate._avg.qualityScore,
     avgPerformance: performanceAggregate._avg.performanceScore,
     ratingCount,
-    similar: similar.map((s) => ({
+    similar: similar.map(({ _count, ...s }) => ({
       ...s,
       platforms: s.platforms.map((p) => p.platform),
       systems: s.systems.map((p) => p.system),
       hardware: s.hardware.map((p) => p.hardware),
       tags: s.tags.map((p) => p.tag),
-      avgQuality: null,
       avgPerformance: null,
-      ratingCount: 0,
+      ratingCount: _count.ratings,
     })),
   });
 }

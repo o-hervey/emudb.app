@@ -82,11 +82,24 @@ export async function PATCH(
   const { name, description, isPublic } = body as Record<string, unknown>;
 
   const data: Record<string, unknown> = {};
-  if (typeof name === "string" && name.trim()) data.name = name.trim();
+  if (typeof name === "string" && name.trim()) {
+    if (name.trim().length > 100) {
+      return NextResponse.json({ error: "name must be 100 characters or fewer" }, { status: 400 });
+    }
+    data.name = name.trim();
+  }
   if (description !== undefined) {
-    data.description = typeof description === "string" ? description.trim() || null : null;
+    const trimmedDesc = typeof description === "string" ? description.trim() || null : null;
+    if (trimmedDesc && trimmedDesc.length > 2000) {
+      return NextResponse.json({ error: "description must be 2000 characters or fewer" }, { status: 400 });
+    }
+    data.description = trimmedDesc;
   }
   if (typeof isPublic === "boolean") data.isPublic = isPublic;
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "No updatable fields provided" }, { status: 400 });
+  }
 
   const updated = await prisma.userList.update({
     where: { id },

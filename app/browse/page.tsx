@@ -78,7 +78,7 @@ function BrowseContent() {
   const platforms = searchParams.getAll('platform');
   const hardware  = searchParams.getAll('hardware');
   const systems   = searchParams.getAll('system');
-  const page      = parseInt(searchParams.get('page') ?? '1', 10);
+  const page      = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
   const platformKey = platforms.join(',');
   const hardwareKey = hardware.join(',');
   const systemKey   = systems.join(',');

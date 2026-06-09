@@ -484,6 +484,14 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Background refresh after a rating submit — does not flash the loading skeleton
+  const refreshSoftware = useCallback(() => {
+    fetch(`/api/software/${id}`)
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+      .then(setSoftware)
+      .catch(() => {});
+  }, [id]);
+
   useEffect(() => { fetchSoftware(); }, [fetchSoftware]);
 
   if (loading) {
@@ -643,7 +651,7 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
                 softwareId={software.id}
                 hardwareOptions={software.hardware}
                 existingRating={existingRating}
-                onSubmitted={fetchSoftware}
+                onSubmitted={refreshSoftware}
               />
             ) : (
               <p className="text-sm text-[var(--color-text-muted)]">

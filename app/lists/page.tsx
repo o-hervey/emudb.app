@@ -106,7 +106,7 @@ function ListsContent() {
   const hardware = searchParams.get('hardware') ?? '';
   const system   = searchParams.get('system') ?? '';
   const sort     = searchParams.get('sort') ?? '';
-  const page     = parseInt(searchParams.get('page') ?? '1', 10);
+  const page     = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
 
   function update(key: string, value: string) {
     const p = new URLSearchParams(searchParams.toString());

@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { key: "auth:signin", max: 10, windowMs: 15 * 60 * 1000 });
+  const limited = await rateLimit(req, { key: "auth:signin", max: 10, windowMs: 15 * 60 * 1000 });
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);

@@ -6,13 +6,15 @@ import { createContext, useContext, useEffect, useState } from 'react';
 interface FiltersContextValue {
   filters: FiltersData | null;
   loading: boolean;
+  error: string;
 }
 
-const FiltersContext = createContext<FiltersContextValue>({ filters: null, loading: true });
+const FiltersContext = createContext<FiltersContextValue>({ filters: null, loading: true, error: '' });
 
 export function FiltersProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilters] = useState<FiltersData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetch('/api/filters')
@@ -22,12 +24,12 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
         return json;
       })
       .then(setFilters)
-      .catch(() => {})
+      .catch(() => setError('Failed to load filter options. Please refresh the page.'))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <FiltersContext.Provider value={{ filters, loading }}>
+    <FiltersContext.Provider value={{ filters, loading, error }}>
       {children}
     </FiltersContext.Provider>
   );

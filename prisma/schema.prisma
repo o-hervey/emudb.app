@@ -116,8 +116,9 @@ model Software {
   downloadUrl String?        @map("download_url")
   sourceUrl   String?        @map("source_url")
   status      SoftwareStatus @default(ACTIVE)
+  avgQuality  Float?         @map("avg_quality")
   createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime?      @map("updated_at")
+  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at")
 
   submittedBy String?  @map("submitted_by") @db.Uuid
   submitter   Profile? @relation(fields: [submittedBy], references: [id])
@@ -132,6 +133,7 @@ model Software {
   @@index([approved, category])
   @@index([approved, status])
   @@index([createdAt])
+  @@index([approved, avgQuality])
   @@map("software")
 }
 
@@ -325,7 +327,7 @@ model UserList {
   isPublic    Boolean  @default(false) @map("is_public")
   clonedFrom  String?  @map("cloned_from") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   owner          Profile         @relation("owned_lists", fields: [ownerId], references: [id], onDelete: Cascade)
   clonedFromList UserList?       @relation("list_clones", fields: [clonedFrom], references: [id], onDelete: SetNull)
@@ -350,6 +352,7 @@ model UserListEntry {
   software Software  @relation(fields: [softwareId], references: [id], onDelete: Cascade)
   hardware Hardware? @relation(fields: [hardwareId], references: [id], onDelete: SetNull)
 
+  @@unique([listId, softwareId])
   @@index([listId, sortOrder])
   @@index([softwareId])
   @@index([hardwareId])

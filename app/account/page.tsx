@@ -258,15 +258,25 @@ function AccountContent() {
   }, [loading, user, router]);
 
   const fetchMyLists = useCallback(async () => {
-    const res = await fetch('/api/account/lists');
-    if (res.ok) setMyLists(await res.json());
-    setListsFetched(true);
+    try {
+      const res = await fetch('/api/account/lists');
+      if (res.ok) setMyLists(await res.json());
+    } catch {
+      // network error — lists stay empty, user can retry by switching tabs
+    } finally {
+      setListsFetched(true);
+    }
   }, []);
 
   const fetchSaved = useCallback(async () => {
-    const res = await fetch('/api/account/saved');
-    if (res.ok) setSavedLists(await res.json());
-    setSavedFetched(true);
+    try {
+      const res = await fetch('/api/account/saved');
+      if (res.ok) setSavedLists(await res.json());
+    } catch {
+      // network error — saved lists stay empty
+    } finally {
+      setSavedFetched(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -322,13 +332,31 @@ function AccountContent() {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this list? This cannot be undone.')) return;
-    const res = await fetch(`/api/lists/${id}`, { method: 'DELETE' });
-    if (res.ok) setMyLists((prev) => prev.filter((l) => l.id !== id));
+    try {
+      const res = await fetch(`/api/lists/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMyLists((prev) => prev.filter((l) => l.id !== id));
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error ?? 'Failed to delete list.');
+      }
+    } catch {
+      setError('Failed to delete list. Please try again.');
+    }
   }
 
   async function handleUnsave(listId: string) {
-    const res = await fetch(`/api/lists/${listId}/save`, { method: 'DELETE' });
-    if (res.ok) setSavedLists((prev) => prev.filter((l) => l.id !== listId));
+    try {
+      const res = await fetch(`/api/lists/${listId}/save`, { method: 'DELETE' });
+      if (res.ok) {
+        setSavedLists((prev) => prev.filter((l) => l.id !== listId));
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error ?? 'Failed to unsave list.');
+      }
+    } catch {
+      setError('Failed to unsave list. Please try again.');
+    }
   }
 
   if (loading || !user) {

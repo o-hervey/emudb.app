@@ -9,7 +9,7 @@ const PAGE_SIZE = 24;
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
 
-  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10));
+  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
   const sort = params.get("sort");
   const category = params.get("category");
   const platformId = params.get("platform");
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { key: "lists:create", max: 30, windowMs: 60 * 60 * 1000 });
+  const limited = await rateLimit(req, { key: "lists:create", max: 30, windowMs: 60 * 60 * 1000 });
   if (limited) return limited;
 
   const user = await getSessionUser();
@@ -104,12 +104,19 @@ export async function POST(req: NextRequest) {
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
+  if (name.trim().length > 100) {
+    return NextResponse.json({ error: "name must be 100 characters or fewer" }, { status: 400 });
+  }
+  const trimmedDescription = typeof description === "string" ? description.trim() || null : null;
+  if (trimmedDescription && trimmedDescription.length > 2000) {
+    return NextResponse.json({ error: "description must be 2000 characters or fewer" }, { status: 400 });
+  }
 
   const list = await prisma.userList.create({
     data: {
       ownerId: user.id,
       name: name.trim(),
-      description: typeof description === "string" ? description.trim() || null : null,
+      description: trimmedDescription,
       isPublic: typeof isPublic === "boolean" ? isPublic : false,
     },
     select: { id: true, name: true, description: true, isPublic: true, createdAt: true },

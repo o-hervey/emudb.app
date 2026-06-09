@@ -11,7 +11,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const limited = rateLimit(req, { key: "ratings:create", max: 60, windowMs: 60 * 60 * 1000 });
+  const limited = await rateLimit(req, { key: "ratings:create", max: 60, windowMs: 60 * 60 * 1000 });
   if (limited) return limited;
 
   const user = await getSessionUser();
@@ -84,11 +84,16 @@ export async function POST(
     }
   }
 
+  const trimmedComment = typeof comment === "string" ? comment.trim() || null : null;
+  if (trimmedComment && trimmedComment.length > 1000) {
+    return NextResponse.json({ error: "comment must be 1000 characters or fewer" }, { status: 400 });
+  }
+
   const data = {
     qualityScore: hasQuality ? (qualityScore as number) : null,
     performanceScore: hasPerformance ? (performanceScore as number) : null,
     hardwareId: normalizedHardwareId,
-    comment: typeof comment === "string" ? comment.trim() || null : null,
+    comment: trimmedComment,
   };
 
   const select = {
@@ -105,9 +110,20 @@ export async function POST(
     select: { id: true },
   });
 
+  const isNew = !existing;
   const rating = existing
     ? await prisma.rating.update({ where: { id: existing.id }, data, select })
     : await prisma.rating.create({ data: { softwareId, userId: user.id, ...data }, select });
 
-  return NextResponse.json(rating);
+  // Keep the denormalized avg_quality column in sync
+  const { _avg } = await prisma.rating.aggregate({
+    where: { softwareId, qualityScore: { not: null } },
+    _avg: { qualityScore: true },
+  });
+  await prisma.software.update({
+    where: { id: softwareId },
+    data: { avgQuality: _avg.qualityScore },
+  });
+
+  return NextResponse.json(rating, { status: isNew ? 201 : 200 });
 }

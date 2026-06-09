@@ -111,9 +111,10 @@ export default function ListDetailPage({ params }: { params: Promise<{ id: strin
       const method = saved ? 'DELETE' : 'POST';
       const res = await fetch(`/api/lists/${id}/save`, { method });
       if (res.ok) {
-        setSaved((prev) => !prev);
+        const wasSaved = saved;
+        setSaved(!wasSaved);
         setList((prev) =>
-          prev ? { ...prev, saveCount: prev.saveCount + (saved ? -1 : 1) } : prev
+          prev ? { ...prev, saveCount: prev.saveCount + (wasSaved ? -1 : 1) } : prev
         );
       } else {
         const json = await res.json();

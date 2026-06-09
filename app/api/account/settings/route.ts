@@ -1,8 +1,12 @@
 import { getSessionUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest) {
+  const limited = await rateLimit(req, { key: "account:settings", max: 10, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

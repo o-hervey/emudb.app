@@ -54,12 +54,17 @@ export async function POST(
     }
   }
 
+  const trimmedNotes = typeof notes === "string" ? notes.trim() || null : null;
+  if (trimmedNotes && trimmedNotes.length > 1000) {
+    return NextResponse.json({ error: "notes must be 1000 characters or fewer" }, { status: 400 });
+  }
+
   const entry = await prisma.userListEntry.create({
     data: {
       listId,
       softwareId,
       hardwareId: normalizedHardwareId,
-      notes: typeof notes === "string" ? notes.trim() || null : null,
+      notes: trimmedNotes,
       sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
     },
     select: {

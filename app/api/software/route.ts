@@ -7,7 +7,7 @@ const PAGE_SIZE = 24;
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
 
-  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10));
+  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
   const sort = params.get("sort");
   const category = params.get("category");
   const status = params.get("status");
@@ -74,52 +74,23 @@ export async function GET(req: NextRequest) {
   type SoftwareRow = Prisma.SoftwareGetPayload<{ select: typeof softwareSelect }>;
 
   const orderBy: Prisma.SoftwareOrderByWithRelationInput =
+    sort === "top_rated"                   ? { avgQuality: { sort: "desc", nulls: "last" } } :
     sort === "newest" || sort === "recent" ? { createdAt: "desc" } :
     sort === "oldest"                      ? { createdAt: "asc" } :
     sort === "most_rated"                  ? { ratings: { _count: "desc" } } :
     sort === "za"                          ? { name: "desc" } :
                                              { name: "asc" };
 
-  let total: number;
-  let items: SoftwareRow[];
-
-  if (sort === "top_rated") {
-    const allItems = await prisma.software.findMany({
+  const [total, items] = await Promise.all([
+    prisma.software.count({ where }),
+    prisma.software.findMany({
       where,
       select: softwareSelect,
-      orderBy: { name: "asc" },
-    });
-    total = allItems.length;
-    items = allItems
-      .map((item) => {
-        const rated = item.ratings.filter((r) => r.qualityScore !== null);
-        const avgQuality = rated.length > 0
-          ? rated.reduce((sum, r) => sum + r.qualityScore!, 0) / rated.length
-          : null;
-        return { item, avgQuality, ratingCount: item.ratings.length };
-      })
-      .sort((a, b) => {
-        if (a.avgQuality === null && b.avgQuality === null) {
-          return b.ratingCount - a.ratingCount || a.item.name.localeCompare(b.item.name);
-        }
-        if (a.avgQuality === null) return 1;
-        if (b.avgQuality === null) return -1;
-        return b.avgQuality - a.avgQuality || b.ratingCount - a.ratingCount || a.item.name.localeCompare(b.item.name);
-      })
-      .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-      .map(({ item }) => item);
-  } else {
-    [total, items] = await Promise.all([
-      prisma.software.count({ where }),
-      prisma.software.findMany({
-        where,
-        select: softwareSelect,
-        orderBy,
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-      }),
-    ]);
-  }
+      orderBy,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
 
   const software = items.map((s) => ({
     ...s,

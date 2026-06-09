@@ -20,9 +20,12 @@ function normalizeOptionalString(val: unknown, field: string): Normalized<string
   return { value: val.trim() || null };
 }
 
+const ID_LIST_MAX = 50;
+
 function normalizeIdList(val: unknown, field: string): Normalized<string[]> {
   if (val === undefined || val === null) return { value: [] };
   if (!Array.isArray(val)) return { error: badRequest(`${field} must be an array`) };
+  if (val.length > ID_LIST_MAX) return { error: badRequest(`${field} may contain at most ${ID_LIST_MAX} entries`) };
 
   const ids = val.map((id) => typeof id === "string" ? id.trim() : "");
   if (ids.some((id) => !isUuid(id))) {
@@ -44,7 +47,7 @@ function isAllowedUrl(val: unknown): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { key: "submissions:create", max: 20, windowMs: 60 * 60 * 1000 });
+  const limited = await rateLimit(req, { key: "submissions:create", max: 20, windowMs: 60 * 60 * 1000 });
   if (limited) return limited;
 
   const user = await getSessionUser();
@@ -77,6 +80,9 @@ async function handleNewListing(userId: string, body: Record<string, unknown>) {
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
+  if ((name as string).trim().length > 100) {
+    return NextResponse.json({ error: "name must be 100 characters or fewer" }, { status: 400 });
+  }
   if (!category || !Object.values(Category).includes(category as Category)) {
     return NextResponse.json({ error: "Valid category is required" }, { status: 400 });
   }
@@ -98,9 +104,13 @@ async function handleNewListing(userId: string, body: Record<string, unknown>) {
   const normalizedSourceUrl = normalizeOptionalString(sourceUrl, "sourceUrl");
   if (normalizedSourceUrl.error) return normalizedSourceUrl.error;
 
+  if (normalizedDescription.value && normalizedDescription.value.length > 2000) return NextResponse.json({ error: "description must be 2000 characters or fewer" }, { status: 400 });
   if (!isAllowedUrl(normalizedWebsiteUrl.value))  return NextResponse.json({ error: "websiteUrl must be an http/https URL" }, { status: 400 });
   if (!isAllowedUrl(normalizedDownloadUrl.value)) return NextResponse.json({ error: "downloadUrl must be an http/https URL" }, { status: 400 });
   if (!isAllowedUrl(normalizedSourceUrl.value))   return NextResponse.json({ error: "sourceUrl must be an http/https URL" }, { status: 400 });
+  if (normalizedWebsiteUrl.value  && normalizedWebsiteUrl.value.length  > 2048) return NextResponse.json({ error: "websiteUrl must be 2048 characters or fewer" }, { status: 400 });
+  if (normalizedDownloadUrl.value && normalizedDownloadUrl.value.length > 2048) return NextResponse.json({ error: "downloadUrl must be 2048 characters or fewer" }, { status: 400 });
+  if (normalizedSourceUrl.value   && normalizedSourceUrl.value.length   > 2048) return NextResponse.json({ error: "sourceUrl must be 2048 characters or fewer" }, { status: 400 });
 
   const normalizedSystemIds = normalizeIdList(systemIds, "systemIds");
   if (normalizedSystemIds.error) return normalizedSystemIds.error;
@@ -267,6 +277,9 @@ async function handleNewHardware(userId: string, body: Record<string, unknown>) 
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
+  if ((name as string).trim().length > 100) {
+    return NextResponse.json({ error: "name must be 100 characters or fewer" }, { status: 400 });
+  }
   if (!hardwareType || !Object.values(HardwareType).includes(hardwareType as HardwareType)) {
     return NextResponse.json({ error: "Valid hardwareType is required" }, { status: 400 });
   }
@@ -321,6 +334,9 @@ async function handleNewTag(userId: string, body: Record<string, unknown>) {
   }
 
   const name = (tagName as string).trim().toLowerCase();
+  if (name.length > 50) {
+    return NextResponse.json({ error: "tagName must be 50 characters or fewer" }, { status: 400 });
+  }
 
   const software = await prisma.software.findUnique({
     where: { id: softwareId, approved: true },
