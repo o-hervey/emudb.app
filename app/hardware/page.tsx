@@ -24,7 +24,7 @@ function HardwareCard({ device }: { device: Hardware }) {
       href={`/browse?hardware=${device.id}`}
       className="group flex flex-col gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 hover:border-[var(--color-accent)] transition-colors"
     >
-      <p className="text-sm font-medium text-[var(--color-text)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">
+      <p className="text-sm font-medium text-[var(--color-text)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-2">
         {device.name}
       </p>
       {device.manufacturer && (
