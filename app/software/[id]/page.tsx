@@ -10,7 +10,7 @@ import { SoftwareIcon } from '@/components/SoftwareIcon';
 import { StarBreakdown, StarInput, StarRating } from '@/components/StarRating';
 import type { PerformanceRating, SoftwareDetail, SoftwareListing } from '@/types';
 import Link from 'next/link';
-import { use, useCallback, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Active',
@@ -254,6 +254,23 @@ function RatingForm({
   const [perfError, setPerfError] = useState('');
   const [editingPerfId, setEditingPerfId] = useState<string | null>(null);
 
+  // Hardware combobox
+  const [hwSearch, setHwSearch] = useState('');
+  const [hwDropOpen, setHwDropOpen] = useState(false);
+  const hwContainerRef = useRef<HTMLDivElement>(null);
+  const sortedHwOptions = [...hardwareOptions].sort((a, b) => a.name.localeCompare(b.name));
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (hwContainerRef.current && !hwContainerRef.current.contains(e.target as Node)) {
+        setHwDropOpen(false);
+        setHwSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   const fetchMyRatings = useCallback(() => {
     fetch(`/api/software/${softwareId}/ratings`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -416,19 +433,43 @@ function RatingForm({
                 {perfError}
               </div>
             )}
-            <div>
-              <label htmlFor="perf-device" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Device</label>
-              <select
-                id="perf-device"
-                value={perfHardwareId}
-                onChange={(e) => { setPerfHardwareId(e.target.value); setEditingPerfId(null); }}
+            <div ref={hwContainerRef} className="relative">
+              <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Device</label>
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder="Search devices…"
+                value={hwDropOpen ? hwSearch : (sortedHwOptions.find((h) => h.id === perfHardwareId)?.name ?? '')}
+                onFocus={() => { setHwDropOpen(true); setHwSearch(''); }}
+                onChange={(e) => { setHwSearch(e.target.value); setHwDropOpen(true); }}
                 className={selectCls}
-              >
-                <option value="">Select a device…</option>
-                {hardwareOptions.map((h) => (
-                  <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-              </select>
+              />
+              {hwDropOpen && (() => {
+                const filtered = sortedHwOptions.filter((h) =>
+                  h.name.toLowerCase().includes(hwSearch.toLowerCase())
+                );
+                return (
+                  <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+                    {filtered.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-[var(--color-text-muted)]">No matches</div>
+                    ) : filtered.map((h) => (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setPerfHardwareId(h.id); setEditingPerfId(null); setHwDropOpen(false); setHwSearch(''); }}
+                        className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                          h.id === perfHardwareId
+                            ? 'bg-[var(--color-accent-surface)] text-[var(--color-accent)]'
+                            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
+                        }`}
+                      >
+                        {h.name}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
             {perfHardwareId && (
               <>
