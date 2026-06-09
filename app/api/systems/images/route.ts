@@ -1,7 +1,7 @@
-import { requireModerator } from '@/lib/auth';
 import { queryIGDB } from '@/lib/igdb';
 import { prisma } from '@/lib/prisma';
-import { NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Must be force-dynamic: this route calls Prisma + IGDB at request time.
 // revalidate + dynamic data sources causes Next.js to cache an empty {} at build time.
@@ -91,9 +91,9 @@ function igdbLogoUrl(rawUrl: string): string {
   return ('https:' + rawUrl.replace('/t_thumb/', '/t_logo_med/')).replace(/\.(jpg|jpeg|webp)$/i, '.png');
 }
 
-export async function GET() {
-  const { error } = await requireModerator();
-  if (error) return error;
+export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, { key: "systems:images", max: 10, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
 
   if (!process.env.IGDB_CLIENT_ID || !process.env.IGDB_CLIENT_SECRET) {
     console.warn('[systems/images] IGDB credentials not set');
@@ -155,7 +155,9 @@ export async function GET() {
     }
     console.log(`[systems/images] matched ${Object.keys(result).length}/${systems.length} systems`);
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600" },
+    });
   } catch (err) {
     console.error('[systems/images]', err);
     return NextResponse.json({ error: 'Failed to fetch system images' }, { status: 500 });
