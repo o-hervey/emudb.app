@@ -98,9 +98,16 @@ export default function ModerationPage() {
     const p = new URLSearchParams({ page: String(page) });
     if (activeTab) p.set('type', activeTab);
     fetch(`/api/moderation/submissions?${p}`)
-      .then((r) => r.json())
-      .then((json: SubmissionsResponse) => { setSubmissions(json.data ?? []); setMeta(json.meta); })
-      .catch(() => setError('Failed to load submissions.'))
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load submissions.');
+        return json as SubmissionsResponse;
+      })
+      .then((json) => {
+        setSubmissions(json.data ?? []);
+        setMeta(json.meta ?? { page: 1, totalPages: 1, total: 0 });
+      })
+      .catch((err: Error) => setError(err.message || 'Failed to load submissions.'))
       .finally(() => setLoading(false));
   };
 

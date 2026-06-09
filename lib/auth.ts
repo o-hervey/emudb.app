@@ -42,11 +42,11 @@ export async function requireModerator() {
 
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
-    select: { id: true, isModerator: true },
+    select: { id: true, isModerator: true, isSuperAdmin: true },
   });
 
   if (!profile) return { user, profile: null, error: profileMissing() };
-  if (!profile.isModerator) return { user, profile, error: forbidden() };
+  if (!profile.isModerator && !profile.isSuperAdmin) return { user, profile, error: forbidden() };
 
   return { user, profile, error: null };
 }
