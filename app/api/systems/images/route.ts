@@ -93,7 +93,7 @@ function igdbLogoUrl(rawUrl: string): string {
 export async function GET() {
   if (!process.env.IGDB_CLIENT_ID || !process.env.IGDB_CLIENT_SECRET) {
     console.warn('[systems/images] IGDB credentials not set');
-    return NextResponse.json({});
+    return NextResponse.json({ error: 'IGDB credentials not configured' }, { status: 500 });
   }
 
   try {
@@ -154,6 +154,6 @@ export async function GET() {
     return NextResponse.json(result);
   } catch (err) {
     console.error('[systems/images]', err);
-    return NextResponse.json({});
+    return NextResponse.json({ error: 'Failed to fetch system images' }, { status: 500 });
   }
 }

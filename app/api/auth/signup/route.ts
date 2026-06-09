@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (err) {
       console.error("[signup] prisma profile upsert failed:", err);
+      return NextResponse.json({ error: "Account created but profile setup failed. Please contact support." }, { status: 500 });
     }
   }
 

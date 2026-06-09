@@ -32,6 +32,10 @@ export async function requireContributor() {
   return { user, error: null };
 }
 
+export function profileMissing() {
+  return NextResponse.json({ error: "Profile not found" }, { status: 500 });
+}
+
 export async function requireModerator() {
   const user = await getSessionUser();
   if (!user) return { user: null, profile: null, error: unauthorized() };
@@ -41,7 +45,8 @@ export async function requireModerator() {
     select: { id: true, isModerator: true },
   });
 
-  if (!profile?.isModerator) return { user, profile, error: forbidden() };
+  if (!profile) return { user, profile: null, error: profileMissing() };
+  if (!profile.isModerator) return { user, profile, error: forbidden() };
 
   return { user, profile, error: null };
 }
@@ -55,7 +60,8 @@ export async function requireSuperAdmin() {
     select: { id: true, isSuperAdmin: true },
   });
 
-  if (!profile?.isSuperAdmin) return { user, profile, error: forbidden() };
+  if (!profile) return { user, profile: null, error: profileMissing() };
+  if (!profile.isSuperAdmin) return { user, profile, error: forbidden() };
 
   return { user, profile, error: null };
 }
