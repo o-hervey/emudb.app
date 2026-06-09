@@ -536,9 +536,14 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
       <div className="space-y-0">
         {/* Software header */}
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 mb-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} size={64} rounded="2xl" />
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-7">
+            <div className="shrink-0 sm:hidden">
+              <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} size={64} rounded="2xl" />
+            </div>
+            <div className="hidden shrink-0 sm:block">
+              <SoftwareIcon name={software.name} category={software.category} websiteUrl={software.websiteUrl} size={104} rounded="2xl" />
+            </div>
+            <div className="flex-1 min-w-0 sm:py-1">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h1 className="text-2xl font-bold text-[var(--color-text)]">{software.name}</h1>
                 <CategoryBadge category={software.category} />
