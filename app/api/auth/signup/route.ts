@@ -47,18 +47,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  if (username && data.user) {
+  if (data.user) {
     try {
-      // Use upsert in case the trigger that creates the profile row is slightly
-      // delayed — update alone throws P2025 if the row doesn't exist yet.
       await prisma.profile.upsert({
         where: { id: data.user.id },
-        update: { username },
-        create: { id: data.user.id, username },
+        update: username ? { username } : {},
+        create: { id: data.user.id, ...(username ? { username } : {}) },
       });
     } catch (err) {
       console.error("[signup] prisma profile upsert failed:", err);
-      // Auth user was created; don't surface this as a fatal error.
     }
   }
 
