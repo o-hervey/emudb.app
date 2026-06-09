@@ -7,6 +7,36 @@ function isValidScore(val: unknown): val is number {
   return typeof val === "number" && Number.isInteger(val) && val >= 1 && val <= 5;
 }
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
+
+  const { id: softwareId } = await params;
+
+  const [qualityRating, performanceRatings] = await Promise.all([
+    prisma.qualityRating.findUnique({
+      where: { softwareId_userId: { softwareId, userId: user.id } },
+      select: { id: true, score: true, comment: true, createdAt: true },
+    }),
+    prisma.performanceRating.findMany({
+      where: { softwareId, userId: user.id },
+      select: {
+        id: true,
+        score: true,
+        comment: true,
+        createdAt: true,
+        hardware: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  return NextResponse.json({ qualityRating, performanceRatings });
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -24,39 +54,25 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { qualityScore, performanceScore, hardwareId, comment } = body as Record<string, unknown>;
+  const { type, score, hardwareId, comment } = body as Record<string, unknown>;
 
-  const hasQuality = qualityScore !== undefined && qualityScore !== null;
-  const hasPerformance = performanceScore !== undefined && performanceScore !== null;
-
-  if (!hasQuality && !hasPerformance) {
-    return NextResponse.json(
-      { error: "At least one of qualityScore or performanceScore is required" },
-      { status: 400 }
-    );
+  if (type !== "quality" && type !== "performance") {
+    return NextResponse.json({ error: "type must be \"quality\" or \"performance\"" }, { status: 400 });
   }
-  if (hasQuality && !isValidScore(qualityScore)) {
-    return NextResponse.json(
-      { error: "qualityScore must be an integer between 1 and 5" },
-      { status: 400 }
-    );
+  if (!isValidScore(score)) {
+    return NextResponse.json({ error: "score must be an integer between 1 and 5" }, { status: 400 });
   }
-  if (hasPerformance && !isValidScore(performanceScore)) {
-    return NextResponse.json(
-      { error: "performanceScore must be an integer between 1 and 5" },
-      { status: 400 }
-    );
+  if (type === "performance" && !hardwareId) {
+    return NextResponse.json({ error: "hardwareId is required for performance ratings" }, { status: 400 });
   }
-  if (hasPerformance && !hardwareId) {
-    return NextResponse.json(
-      { error: "hardwareId is required when providing performanceScore" },
-      { status: 400 }
-    );
-  }
-  if (hardwareId && typeof hardwareId !== "string") {
+  if (type === "performance" && typeof hardwareId !== "string") {
     return NextResponse.json({ error: "hardwareId must be a string" }, { status: 400 });
   }
-  const normalizedHardwareId = typeof hardwareId === "string" && hardwareId ? hardwareId : null;
+
+  const trimmedComment = typeof comment === "string" ? comment.trim() || null : null;
+  if (trimmedComment && trimmedComment.length > 1000) {
+    return NextResponse.json({ error: "comment must be 1000 characters or fewer" }, { status: 400 });
+  }
 
   const software = await prisma.software.findUnique({
     where: { id: softwareId, approved: true },
@@ -66,64 +82,92 @@ export async function POST(
     return NextResponse.json({ error: "Software listing not found" }, { status: 404 });
   }
 
-  if (normalizedHardwareId) {
-    const supportedHardware = await prisma.softwareHardware.findUnique({
-      where: {
-        softwareId_hardwareId: {
-          softwareId,
-          hardwareId: normalizedHardwareId,
-        },
-      },
-      select: { hardwareId: true },
+  if (type === "quality") {
+    const existing = await prisma.qualityRating.findUnique({
+      where: { softwareId_userId: { softwareId, userId: user.id } },
+      select: { id: true },
     });
-    if (!supportedHardware) {
-      return NextResponse.json(
-        { error: "Hardware is not associated with this software listing" },
-        { status: 400 }
-      );
-    }
+
+    const rating = await prisma.qualityRating.upsert({
+      where: { softwareId_userId: { softwareId, userId: user.id } },
+      create: { softwareId, userId: user.id, score, comment: trimmedComment },
+      update: { score, comment: trimmedComment },
+      select: { id: true, score: true, comment: true, createdAt: true, updatedAt: true },
+    });
+
+    const { _avg } = await prisma.qualityRating.aggregate({
+      where: { softwareId },
+      _avg: { score: true },
+    });
+    await prisma.software.update({
+      where: { id: softwareId },
+      data: { avgQuality: _avg.score },
+    });
+
+    return NextResponse.json(rating, { status: existing ? 200 : 201 });
   }
 
-  const trimmedComment = typeof comment === "string" ? comment.trim() || null : null;
-  if (trimmedComment && trimmedComment.length > 1000) {
-    return NextResponse.json({ error: "comment must be 1000 characters or fewer" }, { status: 400 });
+  // type === "performance"
+  const hwId = hardwareId as string;
+
+  const supportedHardware = await prisma.softwareHardware.findUnique({
+    where: { softwareId_hardwareId: { softwareId, hardwareId: hwId } },
+    select: { hardwareId: true },
+  });
+  if (!supportedHardware) {
+    return NextResponse.json(
+      { error: "Hardware is not associated with this software listing" },
+      { status: 400 }
+    );
   }
 
-  const data = {
-    qualityScore: hasQuality ? (qualityScore as number) : null,
-    performanceScore: hasPerformance ? (performanceScore as number) : null,
-    hardwareId: normalizedHardwareId,
-    comment: trimmedComment,
-  };
-
-  const select = {
-    id: true,
-    qualityScore: true,
-    performanceScore: true,
-    hardwareId: true,
-    comment: true,
-    createdAt: true,
-  };
-
-  const existing = await prisma.rating.findFirst({
-    where: { softwareId, userId: user.id },
+  const existing = await prisma.performanceRating.findUnique({
+    where: { softwareId_userId_hardwareId: { softwareId, userId: user.id, hardwareId: hwId } },
     select: { id: true },
   });
 
-  const isNew = !existing;
-  const rating = existing
-    ? await prisma.rating.update({ where: { id: existing.id }, data, select })
-    : await prisma.rating.create({ data: { softwareId, userId: user.id, ...data }, select });
-
-  // Keep the denormalized avg_quality column in sync
-  const { _avg } = await prisma.rating.aggregate({
-    where: { softwareId, qualityScore: { not: null } },
-    _avg: { qualityScore: true },
+  const rating = await prisma.performanceRating.upsert({
+    where: { softwareId_userId_hardwareId: { softwareId, userId: user.id, hardwareId: hwId } },
+    create: { softwareId, userId: user.id, hardwareId: hwId, score, comment: trimmedComment },
+    update: { score, comment: trimmedComment },
+    select: {
+      id: true,
+      score: true,
+      comment: true,
+      createdAt: true,
+      updatedAt: true,
+      hardware: { select: { id: true, name: true } },
+    },
   });
-  await prisma.software.update({
-    where: { id: softwareId },
-    data: { avgQuality: _avg.qualityScore },
-  });
 
-  return NextResponse.json(rating, { status: isNew ? 201 : 200 });
+  return NextResponse.json(rating, { status: existing ? 200 : 201 });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
+
+  const { id: softwareId } = await params;
+
+  const { searchParams } = new URL(req.url);
+  const ratingId = searchParams.get("ratingId");
+
+  if (!ratingId) {
+    return NextResponse.json({ error: "ratingId query param is required" }, { status: 400 });
+  }
+
+  const existing = await prisma.performanceRating.findFirst({
+    where: { id: ratingId, softwareId, userId: user.id },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Rating not found" }, { status: 404 });
+  }
+
+  await prisma.performanceRating.delete({ where: { id: ratingId } });
+
+  return new NextResponse(null, { status: 204 });
 }

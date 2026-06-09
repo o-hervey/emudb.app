@@ -93,11 +93,12 @@ model Profile {
   complaintScore    Float    @default(0.0) @map("complaint_score")
   createdAt         DateTime @default(now()) @map("created_at")
 
-  submittedSoftware Software[]
-  submissions       Submission[]
-  ratings           Rating[]
-  reportsFiled      Report[]       @relation("reports_reporter")
-  reportsReceived   Report[]       @relation("reports_target")
+  submittedSoftware    Software[]
+  submissions          Submission[]
+  qualityRatings       QualityRating[]
+  performanceRatings   PerformanceRating[]
+  reportsFiled         Report[]            @relation("reports_reporter")
+  reportsReceived      Report[]            @relation("reports_target")
   submittedTags     Tag[]          @relation("tag_submitted_by")
   reviewedTags      Tag[]          @relation("tag_reviewed_by")
   ownedLists        UserList[]     @relation("owned_lists")
@@ -123,12 +124,13 @@ model Software {
   submittedBy String?  @map("submitted_by") @db.Uuid
   submitter   Profile? @relation(fields: [submittedBy], references: [id])
 
-  systems     SoftwareSystem[]
-  platforms   SoftwarePlatform[]
-  hardware    SoftwareHardware[]
-  tags        SoftwareTag[]
-  ratings     Rating[]
-  listEntries UserListEntry[]
+  systems             SoftwareSystem[]
+  platforms           SoftwarePlatform[]
+  hardware            SoftwareHardware[]
+  tags                SoftwareTag[]
+  qualityRatings      QualityRating[]
+  performanceRatings  PerformanceRating[]
+  listEntries         UserListEntry[]
 
   @@index([approved, category])
   @@index([approved, status])
@@ -170,10 +172,10 @@ model Hardware {
   primaryPlatformId String?      @map("primary_platform_id") @db.Uuid
   primaryPlatform   Platform?    @relation(fields: [primaryPlatformId], references: [id])
 
-  software    SoftwareHardware[]
-  ratings     Rating[]
-  listEntries UserListEntry[]
-  platforms   HardwarePlatform[]
+  software            SoftwareHardware[]
+  performanceRatings  PerformanceRating[]
+  listEntries         UserListEntry[]
+  platforms           HardwarePlatform[]
 
   @@index([primaryPlatformId])
   @@index([type])
@@ -258,24 +260,43 @@ model SoftwareTag {
   @@map("software_tags")
 }
 
-model Rating {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  softwareId       String   @map("software_id") @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  hardwareId       String?  @map("hardware_id") @db.Uuid
-  qualityScore     Int?     @map("quality_score")
-  performanceScore Int?     @map("performance_score")
-  comment          String?
-  createdAt        DateTime @default(now()) @map("created_at")
+model QualityRating {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  softwareId String   @map("software_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  score      Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
-  software Software  @relation(fields: [softwareId], references: [id])
-  user     Profile   @relation(fields: [userId], references: [id])
-  hardware Hardware? @relation(fields: [hardwareId], references: [id])
+  software Software @relation(fields: [softwareId], references: [id])
+  user     Profile  @relation(fields: [userId], references: [id])
 
   @@unique([softwareId, userId])
+  @@index([softwareId, score])
+  @@index([createdAt])
+  @@map("quality_ratings")
+}
+
+model PerformanceRating {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  softwareId String   @map("software_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  hardwareId String   @map("hardware_id") @db.Uuid
+  score      Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  software Software @relation(fields: [softwareId], references: [id])
+  user     Profile  @relation(fields: [userId], references: [id])
+  hardware Hardware @relation(fields: [hardwareId], references: [id])
+
+  @@unique([softwareId, userId, hardwareId])
+  @@index([softwareId])
   @@index([hardwareId])
   @@index([createdAt])
-  @@map("ratings")
+  @@map("performance_ratings")
 }
 
 model Submission {

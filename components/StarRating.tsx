@@ -96,15 +96,14 @@ export function StarInput({
 export function StarBreakdown({
   ratings,
 }: {
-  ratings: { qualityScore: number | null }[];
+  ratings: { score: number }[];
 }) {
-  const scored = ratings.filter((r) => r.qualityScore !== null);
-  const total = scored.length;
+  const total = ratings.length;
   if (total === 0) return null;
 
   const counts = [5, 4, 3, 2, 1].map((star) => ({
     star,
-    count: scored.filter((r) => r.qualityScore === star).length,
+    count: ratings.filter((r) => r.score === star).length,
   }));
 
   return (

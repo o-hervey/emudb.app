@@ -44,18 +44,26 @@ export interface SoftwareListing {
   updatedAt?: string | null;
 }
 
-export interface Rating {
+export interface QualityRating {
   id: string;
-  qualityScore: number | null;
-  performanceScore: number | null;
+  score: number;
   comment: string | null;
   createdAt: string;
-  hardware: { id: string; name: string } | null;
-  user: { id: string; username: string | null };
+  user: { username: string | null };
+}
+
+export interface PerformanceRating {
+  id: string;
+  score: number;
+  comment: string | null;
+  createdAt: string;
+  hardware: { id: string; name: string };
+  user: { username: string | null };
 }
 
 export interface SoftwareDetail extends SoftwareListing {
-  ratings: Rating[];
+  qualityRatings: QualityRating[];
+  performanceRatings: PerformanceRating[];
   similar: SoftwareListing[];
 }
 

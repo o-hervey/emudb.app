@@ -33,11 +33,21 @@ export async function GET(
         where: { approved: true },
         select: { tag: { select: { id: true, name: true } } },
       },
-      ratings: {
+      qualityRatings: {
         select: {
           id: true,
-          qualityScore: true,
-          performanceScore: true,
+          score: true,
+          comment: true,
+          createdAt: true,
+          user: { select: { username: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
+      performanceRatings: {
+        select: {
+          id: true,
+          score: true,
           comment: true,
           createdAt: true,
           hardware: { select: { id: true, name: true } },
@@ -71,22 +81,21 @@ export async function GET(
       systems: { select: { system: { select: { id: true, name: true, manufacturer: true, type: true } } } },
       hardware: { select: { hardware: { select: { id: true, name: true, manufacturer: true, type: true } } } },
       tags: { where: { approved: true }, select: { tag: { select: { id: true, name: true } } } },
-      _count: { select: { ratings: true } },
+      _count: { select: { qualityRatings: true } },
     },
     take: 4,
     orderBy: { avgQuality: { sort: "desc", nulls: "last" } },
   });
 
-  const [qualityAggregate, performanceAggregate, ratingCount] = await Promise.all([
-    prisma.rating.aggregate({
-      where: { softwareId: id, qualityScore: { not: null } },
-      _avg: { qualityScore: true },
+  const [qualityAggregate, performanceAggregate] = await Promise.all([
+    prisma.qualityRating.aggregate({
+      where: { softwareId: id },
+      _avg: { score: true },
     }),
-    prisma.rating.aggregate({
-      where: { softwareId: id, performanceScore: { not: null } },
-      _avg: { performanceScore: true },
+    prisma.performanceRating.aggregate({
+      where: { softwareId: id },
+      _avg: { score: true },
     }),
-    prisma.rating.count({ where: { softwareId: id } }),
   ]);
 
   return NextResponse.json({
@@ -95,9 +104,9 @@ export async function GET(
     systems: software.systems.map((p) => p.system),
     hardware: software.hardware.map((p) => p.hardware),
     tags: software.tags.map((p) => p.tag),
-    avgQuality: qualityAggregate._avg.qualityScore,
-    avgPerformance: performanceAggregate._avg.performanceScore,
-    ratingCount,
+    avgQuality: qualityAggregate._avg.score,
+    avgPerformance: performanceAggregate._avg.score,
+    ratingCount: software.qualityRatings.length,
     similar: similar.map(({ _count, ...s }) => ({
       ...s,
       platforms: s.platforms.map((p) => p.platform),
@@ -105,7 +114,7 @@ export async function GET(
       hardware: s.hardware.map((p) => p.hardware),
       tags: s.tags.map((p) => p.tag),
       avgPerformance: null,
-      ratingCount: _count.ratings,
+      ratingCount: _count.qualityRatings,
     })),
   });
 }

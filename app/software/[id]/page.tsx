@@ -8,7 +8,7 @@ import { HardwareMultiSelect } from '@/components/HardwareMultiSelect';
 import { MultiSelect } from '@/components/MultiSelect';
 import { SoftwareIcon } from '@/components/SoftwareIcon';
 import { StarBreakdown, StarInput, StarRating } from '@/components/StarRating';
-import type { Rating, SoftwareDetail, SoftwareListing } from '@/types';
+import type { PerformanceRating, SoftwareDetail, SoftwareListing } from '@/types';
 import Link from 'next/link';
 import { use, useCallback, useEffect, useState } from 'react';
 
@@ -230,114 +230,233 @@ function SimilarItem({ software }: { software: SoftwareListing }) {
 function RatingForm({
   softwareId,
   hardwareOptions,
-  existingRating,
   onSubmitted,
 }: {
   softwareId: string;
   hardwareOptions: { id: string; name: string }[];
-  existingRating: Rating | null;
   onSubmitted: () => void;
 }) {
-  const [qualityScore, setQualityScore] = useState<number | null>(existingRating?.qualityScore ?? null);
-  const [performanceScore, setPerformanceScore] = useState<number | null>(existingRating?.performanceScore ?? null);
-  const [hardwareId, setHardwareId] = useState(existingRating?.hardware?.id ?? '');
-  const [comment, setComment] = useState(existingRating?.comment ?? '');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [loadingRatings, setLoadingRatings] = useState(true);
+  const [qualityRating, setQualityRating] = useState<{ id: string; score: number; comment: string | null } | null>(null);
+  const [myPerfRatings, setMyPerfRatings] = useState<{ id: string; score: number; comment: string | null; hardware: { id: string; name: string } }[]>([]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Quality form
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
+  const [qualityComment, setQualityComment] = useState('');
+  const [qualityLoading, setQualityLoading] = useState(false);
+  const [qualityError, setQualityError] = useState('');
+
+  // Performance form
+  const [perfHardwareId, setPerfHardwareId] = useState('');
+  const [perfScore, setPerfScore] = useState<number | null>(null);
+  const [perfComment, setPerfComment] = useState('');
+  const [perfLoading, setPerfLoading] = useState(false);
+  const [perfError, setPerfError] = useState('');
+  const [editingPerfId, setEditingPerfId] = useState<string | null>(null);
+
+  const fetchMyRatings = useCallback(() => {
+    fetch(`/api/software/${softwareId}/ratings`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
+        setQualityRating(data.qualityRating);
+        if (data.qualityRating) {
+          setQualityScore(data.qualityRating.score);
+          setQualityComment(data.qualityRating.comment ?? '');
+        }
+        setMyPerfRatings(data.performanceRatings);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingRatings(false));
+  }, [softwareId]);
+
+  useEffect(() => { fetchMyRatings(); }, [fetchMyRatings]);
+
+  async function handleQualitySubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setQualityError('');
+    setQualityLoading(true);
     try {
       const res = await fetch(`/api/software/${softwareId}/ratings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          qualityScore: qualityScore ?? undefined,
-          performanceScore: performanceScore ?? undefined,
-          hardwareId: hardwareId || undefined,
-          comment: comment.trim() || undefined,
-        }),
+        body: JSON.stringify({ type: 'quality', score: qualityScore, comment: qualityComment.trim() || undefined }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Failed to submit rating'); return; }
-      setSuccess(true);
+      if (!res.ok) { setQualityError(data.error ?? 'Failed to submit'); return; }
+      fetchMyRatings();
       onSubmitted();
     } catch {
-      setError('Something went wrong.');
+      setQualityError('Something went wrong.');
     } finally {
-      setLoading(false);
+      setQualityLoading(false);
     }
   }
 
-  if (success) {
-    return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
-        Rating submitted — thanks!
-      </div>
-    );
+  async function handlePerfSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPerfError('');
+    setPerfLoading(true);
+    try {
+      const res = await fetch(`/api/software/${softwareId}/ratings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'performance', score: perfScore, hardwareId: perfHardwareId, comment: perfComment.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPerfError(data.error ?? 'Failed to submit'); return; }
+      setPerfHardwareId('');
+      setPerfScore(null);
+      setPerfComment('');
+      setEditingPerfId(null);
+      fetchMyRatings();
+      onSubmitted();
+    } catch {
+      setPerfError('Something went wrong.');
+    } finally {
+      setPerfLoading(false);
+    }
+  }
+
+  async function handlePerfDelete(ratingId: string) {
+    const res = await fetch(`/api/software/${softwareId}/ratings?ratingId=${ratingId}`, { method: 'DELETE' });
+    if (res.ok) {
+      fetchMyRatings();
+      onSubmitted();
+    }
+  }
+
+  function startEditPerf(r: { id: string; score: number; comment: string | null; hardware: { id: string; name: string } }) {
+    setEditingPerfId(r.id);
+    setPerfHardwareId(r.hardware.id);
+    setPerfScore(r.score);
+    setPerfComment(r.comment ?? '');
+  }
+
+  const selectCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors';
+  const textareaCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none resize-none transition-colors';
+  const btnCls = 'px-5 py-2.5 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-40 transition-colors';
+
+  if (loadingRatings) {
+    return <div className="h-16 rounded-xl bg-[var(--color-surface-raised)] animate-pulse" />;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-      <h4 className="font-semibold text-[var(--color-text)]">
-        {existingRating ? 'Update your rating' : 'Rate this software'}
-      </h4>
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
-      )}
-      <div>
-        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Quality score</label>
-        <StarInput value={qualityScore} onChange={setQualityScore} />
-      </div>
-      {hardwareOptions.length > 0 && (
-        <div className="space-y-4 border-t border-[var(--color-border)] pt-4">
-          <div>
-            <label htmlFor="rating-device" className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Device (for performance score)</label>
-            <select
-              id="rating-device"
-              value={hardwareId}
-              onChange={(e) => setHardwareId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none transition-colors"
-            >
-              <option value="">Select a device…</option>
-              {hardwareOptions.map((h) => (
-                <option key={h.id} value={h.id}>{h.name}</option>
-              ))}
-            </select>
+    <div className="space-y-4">
+      {/* Quality rating section */}
+      <form onSubmit={handleQualitySubmit} className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <h4 className="font-semibold text-[var(--color-text)]">Quality rating</h4>
+        {qualityError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+            {qualityError}
           </div>
-          {hardwareId && (
-            <div>
-              <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Performance on this device</label>
-              <StarInput value={performanceScore} onChange={setPerformanceScore} />
-            </div>
+        )}
+        <div>
+          <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">Score</label>
+          <StarInput value={qualityScore} onChange={setQualityScore} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">
+            Comment <span className="font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={qualityComment}
+            onChange={(e) => setQualityComment(e.target.value)}
+            rows={2}
+            placeholder="Brief notes on your experience…"
+            className={textareaCls}
+          />
+        </div>
+        <button type="submit" disabled={qualityLoading || !qualityScore} className={btnCls}>
+          {qualityLoading ? 'Saving…' : qualityRating ? 'Update quality rating' : 'Save quality rating'}
+        </button>
+      </form>
+
+      {/* Performance rating section */}
+      {hardwareOptions.length > 0 && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4">
+          <h4 className="font-semibold text-[var(--color-text)]">Performance ratings</h4>
+
+          {/* Existing performance ratings */}
+          {myPerfRatings.length > 0 && (
+            <ul className="space-y-2">
+              {myPerfRatings.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-surface-raised)] px-3 py-2">
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-[var(--color-text)]">{r.hardware.name}</span>
+                    <span className="ml-2 text-xs text-[var(--color-text-muted)]">{'★'.repeat(r.score)}{'☆'.repeat(5 - r.score)}</span>
+                    {r.comment && <p className="text-xs text-[var(--color-text-muted)] truncate mt-0.5">{r.comment}</p>}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEditPerf(r)}
+                      className="text-xs text-[var(--color-accent)] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePerfDelete(r.id)}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
+
+          <form onSubmit={handlePerfSubmit} className="space-y-3 border-t border-[var(--color-border)] pt-4">
+            <p className="text-xs font-medium text-[var(--color-text-muted)]">
+              {editingPerfId ? 'Editing performance rating' : 'Add performance rating'}
+            </p>
+            {perfError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+                {perfError}
+              </div>
+            )}
+            <div>
+              <label htmlFor="perf-device" className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Device</label>
+              <select
+                id="perf-device"
+                value={perfHardwareId}
+                onChange={(e) => { setPerfHardwareId(e.target.value); setEditingPerfId(null); }}
+                className={selectCls}
+              >
+                <option value="">Select a device…</option>
+                {hardwareOptions.map((h) => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
+            </div>
+            {perfHardwareId && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">Score</label>
+                  <StarInput value={perfScore} onChange={setPerfScore} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
+                    Comment <span className="font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={perfComment}
+                    onChange={(e) => setPerfComment(e.target.value)}
+                    rows={2}
+                    placeholder="How did it perform on this device?"
+                    className={textareaCls}
+                  />
+                </div>
+                <button type="submit" disabled={perfLoading || !perfScore} className={btnCls}>
+                  {perfLoading ? 'Saving…' : 'Add performance rating'}
+                </button>
+              </>
+            )}
+          </form>
         </div>
       )}
-      <div>
-        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-2">
-          Comment <span className="text-[var(--color-text-muted)] font-normal">(optional)</span>
-        </label>
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          rows={2}
-          placeholder="Brief notes on your experience…"
-          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none resize-none transition-colors"
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={loading || (!qualityScore && !performanceScore)}
-        className="px-5 py-2.5 rounded-lg bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-40 transition-colors"
-      >
-        {loading ? 'Submitting…' : existingRating ? 'Update rating' : 'Submit rating'}
-      </button>
-    </form>
+    </div>
   );
 }
 
@@ -435,13 +554,12 @@ function AddToListPanel({ softwareId }: { softwareId: string }) {
   );
 }
 
-function PerformanceBreakdown({ ratings }: { ratings: Rating[] }) {
+function PerformanceBreakdown({ ratings }: { ratings: PerformanceRating[] }) {
   const byHardware = ratings
-    .filter((r) => r.performanceScore !== null && r.hardware)
     .reduce<Record<string, { name: string; scores: number[] }>>((acc, r) => {
-      const hw = r.hardware!;
+      const hw = r.hardware;
       if (!acc[hw.id]) acc[hw.id] = { name: hw.name, scores: [] };
-      acc[hw.id].scores.push(r.performanceScore!);
+      acc[hw.id].scores.push(r.score);
       return acc;
     }, {});
 
@@ -517,11 +635,8 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const qualityRatings = software.ratings.filter((r) => r.qualityScore !== null);
-  const avgQuality = qualityRatings.length > 0
-    ? qualityRatings.reduce((s, r) => s + r.qualityScore!, 0) / qualityRatings.length
-    : null;
-  const existingRating = user ? software.ratings.find((r) => r.user.id === user.id) ?? null : null;
+  const avgQuality = software.avgQuality;
+  const qualityCount = software.qualityRatings.length;
   const hasExternalLinks = Boolean(software.websiteUrl || software.downloadUrl || software.sourceUrl);
   const sortedHardware = [...software.hardware].sort((a, b) => {
     const manufacturer = (a.manufacturer ?? '').localeCompare(b.manufacturer ?? '');
@@ -618,31 +733,35 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
                     {avgQuality !== null ? avgQuality.toFixed(1) : '—'}
                   </p>
                   <div className="mt-1">
-                    <StarRating score={avgQuality} count={qualityRatings.length} />
+                    <StarRating score={avgQuality} count={qualityCount} />
                   </div>
                 </div>
-                {qualityRatings.length > 0 && (
+                {qualityCount > 0 && (
                   <div className="flex-1">
-                    <StarBreakdown ratings={software.ratings} />
+                    <StarBreakdown ratings={software.qualityRatings} />
                   </div>
                 )}
               </div>
-              <PerformanceBreakdown ratings={software.ratings} />
+              <PerformanceBreakdown ratings={software.performanceRatings} />
 
               {/* Comments */}
-              {software.ratings.filter((r) => r.comment).length > 0 && (
-                <div className="mt-6 border-t border-[var(--color-border)] pt-6 space-y-3">
-                  <h3 className="text-sm font-semibold text-[var(--color-text)]">Comments</h3>
-                  {software.ratings.filter((r) => r.comment).slice(0, 10).map((r) => (
-                    <div key={r.id} className="rounded-lg bg-[var(--color-surface-raised)] px-4 py-3">
-                      <p className="text-sm text-[var(--color-text)]">{r.comment}</p>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-1.5">
-                        {r.hardware?.name ?? 'no device'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const comments = [
+                  ...software.qualityRatings.filter((r) => r.comment).map((r) => ({ id: r.id, comment: r.comment!, label: 'Quality', createdAt: r.createdAt })),
+                  ...software.performanceRatings.filter((r) => r.comment).map((r) => ({ id: r.id, comment: r.comment!, label: r.hardware.name, createdAt: r.createdAt })),
+                ].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 10);
+                return comments.length > 0 ? (
+                  <div className="mt-6 border-t border-[var(--color-border)] pt-6 space-y-3">
+                    <h3 className="text-sm font-semibold text-[var(--color-text)]">Comments</h3>
+                    {comments.map((c) => (
+                      <div key={c.id} className="rounded-lg bg-[var(--color-surface-raised)] px-4 py-3">
+                        <p className="text-sm text-[var(--color-text)]">{c.comment}</p>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1.5">{c.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </section>
 
             {/* Rating form */}
@@ -650,7 +769,6 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
               <RatingForm
                 softwareId={software.id}
                 hardwareOptions={software.hardware}
-                existingRating={existingRating}
                 onSubmitted={refreshSoftware}
               />
             ) : (

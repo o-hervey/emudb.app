@@ -68,7 +68,7 @@ export async function DELETE(
 
   const [softwareCount, ratingCount, listEntryCount, platformLinkCount] = await Promise.all([
     prisma.softwareHardware.count({ where: { hardwareId: id } }),
-    prisma.rating.count({ where: { hardwareId: id } }),
+    prisma.performanceRating.count({ where: { hardwareId: id } }),
     prisma.userListEntry.count({ where: { hardwareId: id } }),
     prisma.hardwarePlatform.count({ where: { hardwareId: id } }),
   ]);
