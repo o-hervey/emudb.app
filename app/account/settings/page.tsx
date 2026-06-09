@@ -138,21 +138,29 @@ export default function AccountSettingsPage() {
     setIdentityAction(provider);
 
     try {
-      const supabase = createClient();
-
-      const { error } = await supabase.auth.linkIdentity({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/account/settings')}`,
-        },
+      const res = await fetch('/api/account/identities/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
       });
 
-      if (error) {
-        setIdentityError(error.message);
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setIdentityError(data?.error ?? 'Failed to start account linking.');
         setIdentityAction(null);
+        return;
       }
+
+      if (!data?.url) {
+        setIdentityError('No authorization URL returned.');
+        setIdentityAction(null);
+        return;
+      }
+
+      window.location.href = data.url;
     } catch {
-      setIdentityError('Something went wrong while starting account linking.');
+      setIdentityError('Failed to start account linking.');
       setIdentityAction(null);
     }
   }
