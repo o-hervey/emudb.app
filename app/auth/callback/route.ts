@@ -90,13 +90,11 @@ export async function GET(req: NextRequest) {
 
   if (!existingProfile) {
     const username = await getAvailableUsername(usernameFromUser(data.user));
-
-    await prisma.profile.create({
-      data: {
-        id: data.user.id,
-        username,
-      },
-    });
+    try {
+      await prisma.profile.create({ data: { id: data.user.id, username } });
+    } catch {
+      // Race condition: another request already created the profile — fine to continue.
+    }
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin));

@@ -8,9 +8,12 @@ function isValidScore(val: unknown): val is number {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = await rateLimit(req, { key: "ratings:read", max: 120, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
@@ -147,6 +150,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = await rateLimit(req, { key: "ratings:delete", max: 30, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

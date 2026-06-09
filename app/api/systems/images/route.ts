@@ -1,3 +1,4 @@
+import { requireModerator } from '@/lib/auth';
 import { queryIGDB } from '@/lib/igdb';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
@@ -91,6 +92,9 @@ function igdbLogoUrl(rawUrl: string): string {
 }
 
 export async function GET() {
+  const { error } = await requireModerator();
+  if (error) return error;
+
   if (!process.env.IGDB_CLIENT_ID || !process.env.IGDB_CLIENT_SECRET) {
     console.warn('[systems/images] IGDB credentials not set');
     return NextResponse.json({ error: 'IGDB credentials not configured' }, { status: 500 });
