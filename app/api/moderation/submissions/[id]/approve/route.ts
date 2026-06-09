@@ -1,4 +1,5 @@
 import { requireModerator } from "@/lib/auth";
+import { pingIndexNow } from "@/lib/indexnow";
 import { prisma } from "@/lib/prisma";
 import { Category, HardwareType, Prisma, SoftwareStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
@@ -217,7 +218,9 @@ export async function POST(
     if (editHardwareIds?.length && hwCount   !== editHardwareIds.length) return badRequest("One or more hardware entries were not found");
   }
 
-  await prisma.$transaction(async (tx) => {
+  const { newSoftwareId } = await prisma.$transaction(async (tx) => {
+    let newSoftwareId: string | undefined;
+
     switch (submission.type) {
       case "NEW_LISTING": {
         const software = await tx.software.create({
@@ -233,6 +236,7 @@ export async function POST(
             submittedBy: submission.submittedBy,
           },
         });
+        newSoftwareId = software.id;
 
         if (listingSystemIds.length > 0) {
           await tx.softwareSystem.createMany({
@@ -342,7 +346,13 @@ export async function POST(
       where: { id },
       data: { status: "APPROVED", reviewedBy: user!.id, reviewedAt: new Date() },
     });
+
+    return { newSoftwareId };
   });
+
+  const pingUrls = ["https://emudb.app/", "https://emudb.app/llms.txt"];
+  if (newSoftwareId) pingUrls.push(`https://emudb.app/software/${newSoftwareId}`);
+  void pingIndexNow(pingUrls);
 
   return NextResponse.json({ ok: true });
 }
