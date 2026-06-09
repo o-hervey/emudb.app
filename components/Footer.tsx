@@ -46,15 +46,25 @@ export function Footer() {
             <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
               A community-driven directory of emulation software.
             </p>
-            <a
-              href="https://github.com/o-hervey/emudb.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              <GitHubIcon />
-              GitHub
-            </a>
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://github.com/o-hervey/emudb.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+              >
+                <GitHubIcon />
+                GitHub
+              </a>
+              <a
+                href="https://discord.gg/NdNHPwMHt5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+              >
+                Discord
+              </a>
+            </div>
           </div>
 
           {/* Nav columns */}

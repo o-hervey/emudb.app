@@ -38,7 +38,7 @@ function Star({ filled, half }: { filled: boolean; half?: boolean }) {
 
 export function StarRating({ score, count }: { score: number | null; count?: number }) {
   if (score === null) {
-    return <span className="text-xs text-[var(--color-text-muted)]">No ratings yet</span>;
+    return <span className="text-xs text-[var(--color-text-muted)]">Be the first to rate</span>;
   }
   const rounded = Math.round(score * 2) / 2;
   return (
