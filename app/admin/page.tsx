@@ -19,6 +19,12 @@ function input(extra = '') {
   return `w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)] ${extra}`;
 }
 
+async function readJson<T>(res: Response): Promise<T> {
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? 'Request failed');
+  return json as T;
+}
+
 function Btn({
   children, onClick, disabled, variant = 'ghost', type = 'button',
 }: {
@@ -90,7 +96,11 @@ function OverviewTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/stats').then(r => r.json()).then(setStats).finally(() => setLoading(false));
+    fetch('/api/admin/stats')
+      .then((r) => readJson<Stats>(r))
+      .then(setStats)
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>;
@@ -133,9 +143,12 @@ function UsersTab() {
     const p = new URLSearchParams({ page: String(page) });
     if (search) p.set('search', search);
     fetch(`/api/admin/users?${p}`)
-      .then(r => r.json())
-      .then(json => { setUsers(json.data ?? []); setMeta(json.meta); })
-      .catch(() => setError('Failed to load users.'))
+      .then((r) => readJson<{ data?: AdminUser[]; meta?: typeof meta }>(r))
+      .then(json => {
+        setUsers(json.data ?? []);
+        setMeta(json.meta ?? { page: 1, totalPages: 1, total: 0 });
+      })
+      .catch((err: Error) => setError(err.message || 'Failed to load users.'))
       .finally(() => setLoading(false));
   }, [search, page]);
 
@@ -235,8 +248,8 @@ function UsersTab() {
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 
 const SYSTEM_TYPES  = ['HOME', 'HANDHELD', 'ARCADE', 'COMPUTER', 'OTHER'];
-const PLATFORM_GROUPS = ['WINDOWS', 'MACOS', 'LINUX', 'MOBILE', 'OTHER'];
-const HARDWARE_TYPES  = ['HANDHELD', 'SBC', 'MODDED_CONSOLE', 'DESKTOP_ARCHITECTURE'];
+const PLATFORM_GROUPS = ['WINDOWS', 'MACOS', 'LINUX', 'MOBILE', 'CONSOLE', 'OTHER'];
+const HARDWARE_TYPES  = ['HANDHELD', 'SBC', 'MODDED_CONSOLE', 'DESKTOP_ARCHITECTURE', 'FPGA'];
 
 interface DbSystem   { id: string; name: string; manufacturer: string | null; type: string }
 interface DbPlatform { id: string; name: string; group: string }
@@ -262,7 +275,11 @@ function SystemsSection() {
 
   const reload = () => {
     setLoading(true);
-    fetch('/api/admin/systems').then(r => r.json()).then(setItems).finally(() => setLoading(false));
+    fetch('/api/admin/systems')
+      .then((r) => readJson<DbSystem[]>(r))
+      .then(setItems)
+      .catch(() => setFormError('Failed to load systems.'))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { reload(); }, []);
 
@@ -357,7 +374,11 @@ function PlatformsSection() {
 
   const reload = () => {
     setLoading(true);
-    fetch('/api/admin/platforms').then(r => r.json()).then(setItems).finally(() => setLoading(false));
+    fetch('/api/admin/platforms')
+      .then((r) => readJson<DbPlatform[]>(r))
+      .then(setItems)
+      .catch(() => setFormError('Failed to load platforms.'))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { reload(); }, []);
 
@@ -450,9 +471,12 @@ function HardwareSection() {
   const reload = () => {
     setLoading(true);
     Promise.all([
-      fetch('/api/admin/hardware').then(r => r.json()),
-      fetch('/api/admin/platforms').then(r => r.json()),
-    ]).then(([hw, pl]) => { setItems(hw); setPlatforms(pl); }).finally(() => setLoading(false));
+      fetch('/api/admin/hardware').then((r) => readJson<DbHardware[]>(r)),
+      fetch('/api/admin/platforms').then((r) => readJson<DbPlatform[]>(r)),
+    ])
+      .then(([hw, pl]) => { setItems(hw); setPlatforms(pl); })
+      .catch(() => setFormError('Failed to load hardware.'))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { reload(); }, []);
 
@@ -592,9 +616,12 @@ function ReportsTab() {
     if (statusFilter) p.set('status', statusFilter);
     if (typeFilter) p.set('targetType', typeFilter);
     fetch(`/api/admin/reports?${p}`)
-      .then(r => r.json())
-      .then(json => { setReports(json.data ?? []); setMeta(json.meta); })
-      .catch(() => setError('Failed to load reports.'))
+      .then((r) => readJson<{ data?: AdminReport[]; meta?: typeof meta }>(r))
+      .then(json => {
+        setReports(json.data ?? []);
+        setMeta(json.meta ?? { page: 1, totalPages: 1, total: 0 });
+      })
+      .catch((err: Error) => setError(err.message || 'Failed to load reports.'))
       .finally(() => setLoading(false));
   }, [page, statusFilter, typeFilter]);
 

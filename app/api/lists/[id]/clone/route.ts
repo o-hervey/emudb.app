@@ -18,6 +18,7 @@ export async function POST(
       name: true,
       description: true,
       entries: {
+        where: { software: { approved: true } },
         select: { softwareId: true, hardwareId: true, notes: true, sortOrder: true },
       },
     },

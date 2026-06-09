@@ -32,6 +32,7 @@ interface ListDetail {
   updatedAt: string;
   saveCount: number;
   cloneCount: number;
+  viewerHasSaved: boolean;
   entries: ListEntry[];
 }
 
@@ -89,7 +90,10 @@ export default function ListDetailPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     fetch(`/api/lists/${id}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(setList)
+      .then((data: ListDetail) => {
+        setList(data);
+        setSaved(data.viewerHasSaved);
+      })
       .catch((status) =>
         setError(status === 404 ? 'List not found.' : 'Failed to load list.')
       )

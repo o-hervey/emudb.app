@@ -41,7 +41,11 @@ export function CollectionsRow() {
 
   useEffect(() => {
     fetch('/api/lists?sort=saved&page=1')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load lists.');
+        return json;
+      })
       .then((json) => setLists((json.data ?? []).slice(0, 4)))
       .catch(() => {})
       .finally(() => setLoading(false));

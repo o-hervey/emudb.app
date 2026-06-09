@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "auth:signup", max: 5, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
@@ -19,16 +23,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
 
-  if (username !== undefined && username !== null) {
-    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+  const trimmedUsername = typeof username === "string" ? username.trim() : null;
+
+  if (trimmedUsername) {
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(trimmedUsername)) {
       return NextResponse.json(
-        { error: "Username must be 3–30 characters, letters/numbers/underscores only" },
+        { error: "Username must be 3–30 characters: letters, numbers, _ or -" },
         { status: 400 }
       );
     }
 
     try {
-      const existing = await prisma.profile.findUnique({ where: { username } });
+      const existing = await prisma.profile.findUnique({ where: { username: trimmedUsername } });
       if (existing) {
         return NextResponse.json({ error: "Username already taken" }, { status: 409 });
       }
@@ -51,10 +57,13 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.profile.upsert({
         where: { id: data.user.id },
-        update: username ? { username } : {},
-        create: { id: data.user.id, ...(username ? { username } : {}) },
+        update: trimmedUsername ? { username: trimmedUsername } : {},
+        create: { id: data.user.id, ...(trimmedUsername ? { username: trimmedUsername } : {}) },
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "P2002") {
+        return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+      }
       console.error("[signup] prisma profile upsert failed:", err);
       return NextResponse.json({ error: "Account created but profile setup failed. Please contact support." }, { status: 500 });
     }

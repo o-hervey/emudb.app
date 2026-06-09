@@ -11,6 +11,7 @@ export async function GET() {
     select: {
       id: true,
       username: true,
+      isActive: true,
       isModerator: true,
       isSuperAdmin: true,
       createdAt: true,

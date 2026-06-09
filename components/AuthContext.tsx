@@ -6,6 +6,7 @@ interface UserProfile {
   id: string;
   email: string;
   username: string | null;
+  isActive: boolean;
   isModerator: boolean;
   isSuperAdmin: boolean;
   createdAt: string;

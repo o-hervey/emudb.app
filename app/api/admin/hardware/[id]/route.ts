@@ -66,10 +66,20 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const count = await prisma.softwareHardware.count({ where: { hardwareId: id } });
-  if (count > 0) {
+  const [softwareCount, ratingCount, listEntryCount, platformLinkCount] = await Promise.all([
+    prisma.softwareHardware.count({ where: { hardwareId: id } }),
+    prisma.rating.count({ where: { hardwareId: id } }),
+    prisma.userListEntry.count({ where: { hardwareId: id } }),
+    prisma.hardwarePlatform.count({ where: { hardwareId: id } }),
+  ]);
+  if (softwareCount > 0 || ratingCount > 0 || listEntryCount > 0 || platformLinkCount > 0) {
+    const parts: string[] = [];
+    if (softwareCount > 0) parts.push(`${softwareCount} software listing(s)`);
+    if (ratingCount > 0) parts.push(`${ratingCount} rating(s)`);
+    if (listEntryCount > 0) parts.push(`${listEntryCount} list entry/entries`);
+    if (platformLinkCount > 0) parts.push(`${platformLinkCount} platform link(s)`);
     return NextResponse.json(
-      { error: `Cannot delete: ${count} software listing(s) reference this hardware` },
+      { error: `Cannot delete: referenced by ${parts.join(" and ")}` },
       { status: 409 }
     );
   }

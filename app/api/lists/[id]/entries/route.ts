@@ -37,11 +37,21 @@ export async function POST(
   const normalizedHardwareId = typeof hardwareId === "string" && hardwareId ? hardwareId : null;
 
   if (normalizedHardwareId) {
-    const hw = await prisma.hardware.findUnique({
-      where: { id: normalizedHardwareId },
-      select: { id: true },
+    const supportedHardware = await prisma.softwareHardware.findUnique({
+      where: {
+        softwareId_hardwareId: {
+          softwareId,
+          hardwareId: normalizedHardwareId,
+        },
+      },
+      select: { hardwareId: true },
     });
-    if (!hw) return NextResponse.json({ error: "Hardware not found" }, { status: 404 });
+    if (!supportedHardware) {
+      return NextResponse.json(
+        { error: "Hardware is not associated with this software listing" },
+        { status: 400 }
+      );
+    }
   }
 
   const entry = await prisma.userListEntry.create({

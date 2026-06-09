@@ -10,7 +10,7 @@ import { SoftwareIcon } from '@/components/SoftwareIcon';
 import { StarBreakdown, StarInput, StarRating } from '@/components/StarRating';
 import type { Rating, SoftwareDetail, SoftwareListing } from '@/types';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Active',
@@ -475,16 +475,16 @@ export default function SoftwareDetailPage({ params }: { params: Promise<{ id: s
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [showEdit, setShowEdit] = useState(false);
 
-  const fetchSoftware = () => {
+  const fetchSoftware = useCallback(() => {
     setLoading(true);
     fetch(`/api/software/${id}`)
       .then((r) => r.ok ? r.json() : Promise.reject(r.status))
       .then(setSoftware)
       .catch((status) => setError(status === 404 ? 'Listing not found.' : 'Failed to load.'))
       .finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  useEffect(() => { fetchSoftware(); }, [id]);
+  useEffect(() => { fetchSoftware(); }, [fetchSoftware]);
 
   if (loading) {
     return (

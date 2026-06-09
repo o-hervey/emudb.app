@@ -15,7 +15,11 @@ function useListings(sort: string) {
 
   useEffect(() => {
     fetch(`/api/software?sort=${sort}&page=1`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load listings.');
+        return json as PaginatedResponse<SoftwareListing>;
+      })
       .then((json: PaginatedResponse<SoftwareListing>) => setData(json.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));

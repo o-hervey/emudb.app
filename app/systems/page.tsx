@@ -4,14 +4,14 @@ import { useFilters } from '@/components/FiltersContext';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const TYPE_ORDER = ['home console', 'handheld', 'arcade', 'computer', 'other'];
+const TYPE_ORDER = ['HOME', 'HANDHELD', 'ARCADE', 'COMPUTER', 'OTHER'];
 
 const TYPE_LABELS: Record<string, string> = {
-  'home console': 'Home Consoles',
-  'handheld':     'Handhelds',
-  'arcade':       'Arcade',
-  'computer':     'Computers',
-  'other':        'Other',
+  HOME:     'Home Consoles',
+  HANDHELD: 'Handhelds',
+  ARCADE:   'Arcade',
+  COMPUTER: 'Computers',
+  OTHER:    'Other',
 };
 
 interface SystemItem {
@@ -64,7 +64,7 @@ export default function SystemsPage() {
 
   const grouped: Record<string, SystemItem[]> = {};
   for (const system of filters?.systems ?? []) {
-    const key = system.type.toLowerCase();
+    const key = system.type;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(system);
   }

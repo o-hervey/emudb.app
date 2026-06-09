@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 function Star({ filled, half }: { filled: boolean; half?: boolean }) {
+  const gradientId = useId();
+
   return (
     <svg
       width="14"
@@ -16,14 +18,14 @@ function Star({ filled, half }: { filled: boolean; half?: boolean }) {
       {half ? (
         <>
           <defs>
-            <linearGradient id="half">
+            <linearGradient id={gradientId}>
               <stop offset="50%" stopColor="var(--color-accent)" />
               <stop offset="50%" stopColor="transparent" />
             </linearGradient>
           </defs>
           <polygon
             points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-            fill="url(#half)"
+            fill={`url(#${gradientId})`}
             stroke="var(--color-accent)"
           />
         </>
@@ -43,7 +45,7 @@ export function StarRating({ score, count }: { score: number | null; count?: num
     <span className="flex items-center gap-1.5">
       <span className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Star key={i} filled={i <= rounded} />
+          <Star key={i} filled={i <= Math.floor(rounded)} half={i - 0.5 === rounded} />
         ))}
       </span>
       <span className="text-xs text-[var(--color-text-muted)]">

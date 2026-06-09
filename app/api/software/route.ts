@@ -53,41 +53,73 @@ export async function GET(req: NextRequest) {
 
   const where: Prisma.SoftwareWhereInput = { AND: and };
 
+  const softwareSelect = {
+    id: true,
+    name: true,
+    description: true,
+    category: true,
+    status: true,
+    websiteUrl: true,
+    platforms: { select: { platform: { select: { id: true, name: true, group: true } } } },
+    systems: { select: { system: { select: { id: true, name: true, type: true } } } },
+    hardware: { select: { hardware: { select: { id: true, name: true, type: true } } } },
+    tags: {
+      where: { approved: true },
+      select: { tag: { select: { id: true, name: true } } },
+    },
+    ratings: {
+      select: { qualityScore: true, performanceScore: true },
+    },
+  } satisfies Prisma.SoftwareSelect;
+  type SoftwareRow = Prisma.SoftwareGetPayload<{ select: typeof softwareSelect }>;
+
   const orderBy: Prisma.SoftwareOrderByWithRelationInput =
     sort === "newest" || sort === "recent" ? { createdAt: "desc" } :
     sort === "oldest"                      ? { createdAt: "asc" } :
-    sort === "top_rated"                   ? { ratings: { _count: "desc" } } :
     sort === "most_rated"                  ? { ratings: { _count: "desc" } } :
     sort === "za"                          ? { name: "desc" } :
                                              { name: "asc" };
 
-  const [total, items] = await Promise.all([
-    prisma.software.count({ where }),
-    prisma.software.findMany({
+  let total: number;
+  let items: SoftwareRow[];
+
+  if (sort === "top_rated") {
+    const allItems = await prisma.software.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        category: true,
-        status: true,
-        websiteUrl: true,
-        platforms: { select: { platform: { select: { id: true, name: true, group: true } } } },
-        systems: { select: { system: { select: { id: true, name: true, type: true } } } },
-        hardware: { select: { hardware: { select: { id: true, name: true, type: true } } } },
-        tags: {
-          where: { approved: true },
-          select: { tag: { select: { id: true, name: true } } },
-        },
-        ratings: {
-          select: { qualityScore: true, performanceScore: true },
-        },
-      },
-      orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-  ]);
+      select: softwareSelect,
+      orderBy: { name: "asc" },
+    });
+    total = allItems.length;
+    items = allItems
+      .map((item) => {
+        const rated = item.ratings.filter((r) => r.qualityScore !== null);
+        const avgQuality = rated.length > 0
+          ? rated.reduce((sum, r) => sum + r.qualityScore!, 0) / rated.length
+          : null;
+        return { item, avgQuality, ratingCount: item.ratings.length };
+      })
+      .sort((a, b) => {
+        if (a.avgQuality === null && b.avgQuality === null) {
+          return b.ratingCount - a.ratingCount || a.item.name.localeCompare(b.item.name);
+        }
+        if (a.avgQuality === null) return 1;
+        if (b.avgQuality === null) return -1;
+        return b.avgQuality - a.avgQuality || b.ratingCount - a.ratingCount || a.item.name.localeCompare(b.item.name);
+      })
+      .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      .map(({ item }) => item);
+  } else {
+    [total, items] = await Promise.all([
+      prisma.software.count({ where }),
+      prisma.software.findMany({
+        where,
+        select: softwareSelect,
+        orderBy,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+    ]);
+  }
 
   const software = items.map((s) => ({
     ...s,

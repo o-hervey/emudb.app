@@ -83,15 +83,15 @@ enum ReportStatus {
 
 // Profiles table pattern: extends Supabase `auth.users` (do NOT store passwords here)
 model Profile {
-  id                String    @id @db.Uuid @map("id")
-  username          String?   @unique
-  isActive          Boolean   @default(true) @map("is_active")
-  isModerator       Boolean   @default(false) @map("is_moderator")
-  isSuperAdmin      Boolean   @default(false) @map("is_super_admin")
-  reportCredibility Float     @default(1.0) @map("report_credibility")
-  reportsFiledToday Int       @default(0) @map("reports_filed_today")
-  complaintScore    Float     @default(0.0) @map("complaint_score")
-  createdAt         DateTime  @default(now()) @map("created_at")
+  id                String   @id @map("id") @db.Uuid
+  username          String?  @unique
+  isActive          Boolean  @default(true) @map("is_active")
+  isModerator       Boolean  @default(false) @map("is_moderator")
+  isSuperAdmin      Boolean  @default(false) @map("is_super_admin")
+  reportCredibility Float    @default(1.0) @map("report_credibility")
+  reportsFiledToday Int      @default(0) @map("reports_filed_today")
+  complaintScore    Float    @default(0.0) @map("complaint_score")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   submittedSoftware Software[]
   submissions       Submission[]
@@ -107,19 +107,19 @@ model Profile {
 }
 
 model Software {
-  id          String   @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   description String?
   category    Category
-  approved    Boolean  @default(false)
-  websiteUrl  String?  @map("website_url")
-  downloadUrl String?  @map("download_url")
-  sourceUrl   String?  @map("source_url")
+  approved    Boolean        @default(false)
+  websiteUrl  String?        @map("website_url")
+  downloadUrl String?        @map("download_url")
+  sourceUrl   String?        @map("source_url")
   status      SoftwareStatus @default(ACTIVE)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime? @map("updated_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime?      @map("updated_at")
 
-  submittedBy String?  @db.Uuid @map("submitted_by")
+  submittedBy String?  @map("submitted_by") @db.Uuid
   submitter   Profile? @relation(fields: [submittedBy], references: [id])
 
   systems     SoftwareSystem[]
@@ -129,22 +129,26 @@ model Software {
   ratings     Rating[]
   listEntries UserListEntry[]
 
+  @@index([approved, category])
+  @@index([approved, status])
+  @@index([createdAt])
   @@map("software")
 }
 
 model System {
-  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  name        String
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
   manufacturer String?
-  type        SystemType
+  type         SystemType
 
-  software    SoftwareSystem[]
+  software SoftwareSystem[]
 
+  @@index([type])
   @@map("systems")
 }
 
 model Platform {
-  id    String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  id    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name  String
   group PlatformGroup
 
@@ -152,158 +156,174 @@ model Platform {
   primaryHardware Hardware[]
   hardware        HardwarePlatform[]
 
+  @@index([group])
   @@map("platforms")
 }
 
 model Hardware {
-  id                String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name              String
   manufacturer      String?
   type              HardwareType
-  primaryPlatformId String? @db.Uuid @map("primary_platform_id")
-  primaryPlatform   Platform? @relation(fields: [primaryPlatformId], references: [id])
+  primaryPlatformId String?      @map("primary_platform_id") @db.Uuid
+  primaryPlatform   Platform?    @relation(fields: [primaryPlatformId], references: [id])
 
   software    SoftwareHardware[]
   ratings     Rating[]
   listEntries UserListEntry[]
   platforms   HardwarePlatform[]
 
+  @@index([primaryPlatformId])
+  @@index([type])
   @@map("hardware")
 }
 
 model HardwarePlatform {
-  hardwareId String @db.Uuid @map("hardware_id")
-  platformId String @db.Uuid @map("platform_id")
+  hardwareId String @map("hardware_id") @db.Uuid
+  platformId String @map("platform_id") @db.Uuid
 
-  hardware   Hardware @relation(fields: [hardwareId], references: [id])
-  platform   Platform @relation(fields: [platformId], references: [id])
+  hardware Hardware @relation(fields: [hardwareId], references: [id])
+  platform Platform @relation(fields: [platformId], references: [id])
 
   @@id([hardwareId, platformId])
+  @@index([platformId])
   @@map("hardware_platforms")
 }
 
 model Tag {
-  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  name        String @unique
-  approved    Boolean @default(false)
-  submittedBy String? @db.Uuid @map("submitted_by")
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String   @unique
+  approved           Boolean  @default(false)
+  submittedBy        String?  @map("submitted_by") @db.Uuid
   submittedByProfile Profile? @relation("tag_submitted_by", fields: [submittedBy], references: [id])
-  reviewedBy  String? @db.Uuid @map("reviewed_by")
+  reviewedBy         String?  @map("reviewed_by") @db.Uuid
   reviewedByProfile  Profile? @relation("tag_reviewed_by", fields: [reviewedBy], references: [id])
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   software SoftwareTag[]
 
+  @@index([approved])
   @@map("tags")
 }
 
 // Junction tables
 model SoftwareSystem {
-  softwareId String @db.Uuid @map("software_id")
-  systemId   String @db.Uuid @map("system_id")
+  softwareId String @map("software_id") @db.Uuid
+  systemId   String @map("system_id") @db.Uuid
 
-  software   Software @relation(fields: [softwareId], references: [id])
-  system     System   @relation(fields: [systemId], references: [id])
+  software Software @relation(fields: [softwareId], references: [id])
+  system   System   @relation(fields: [systemId], references: [id])
 
   @@id([softwareId, systemId])
+  @@index([systemId])
   @@map("software_systems")
 }
 
 model SoftwarePlatform {
-  softwareId String @db.Uuid @map("software_id")
-  platformId String @db.Uuid @map("platform_id")
+  softwareId String @map("software_id") @db.Uuid
+  platformId String @map("platform_id") @db.Uuid
 
-  software   Software @relation(fields: [softwareId], references: [id])
-  platform   Platform @relation(fields: [platformId], references: [id])
+  software Software @relation(fields: [softwareId], references: [id])
+  platform Platform @relation(fields: [platformId], references: [id])
 
   @@id([softwareId, platformId])
+  @@index([platformId])
   @@map("software_platforms")
 }
 
 model SoftwareHardware {
-  softwareId String @db.Uuid @map("software_id")
-  hardwareId String @db.Uuid @map("hardware_id")
+  softwareId String @map("software_id") @db.Uuid
+  hardwareId String @map("hardware_id") @db.Uuid
 
-  software   Software @relation(fields: [softwareId], references: [id])
-  hardware   Hardware @relation(fields: [hardwareId], references: [id])
+  software Software @relation(fields: [softwareId], references: [id])
+  hardware Hardware @relation(fields: [hardwareId], references: [id])
 
   @@id([softwareId, hardwareId])
+  @@index([hardwareId])
   @@map("software_hardware")
 }
 
 model SoftwareTag {
-  softwareId String @db.Uuid @map("software_id")
-  tagId      String @db.Uuid @map("tag_id")
+  softwareId String  @map("software_id") @db.Uuid
+  tagId      String  @map("tag_id") @db.Uuid
   approved   Boolean @default(false)
 
-  software   Software @relation(fields: [softwareId], references: [id])
-  tag        Tag      @relation(fields: [tagId], references: [id])
+  software Software @relation(fields: [softwareId], references: [id])
+  tag      Tag      @relation(fields: [tagId], references: [id])
 
   @@id([softwareId, tagId])
+  @@index([tagId, approved])
   @@map("software_tags")
 }
 
 model Rating {
-  id             String  @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  softwareId     String  @db.Uuid @map("software_id")
-  userId         String  @db.Uuid @map("user_id")
-  hardwareId     String? @db.Uuid @map("hardware_id")
-  qualityScore   Int?    @map("quality_score")
-  performanceScore Int?  @map("performance_score")
-  comment        String?
-  createdAt      DateTime @default(now()) @map("created_at")
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  softwareId       String   @map("software_id") @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  hardwareId       String?  @map("hardware_id") @db.Uuid
+  qualityScore     Int?     @map("quality_score")
+  performanceScore Int?     @map("performance_score")
+  comment          String?
+  createdAt        DateTime @default(now()) @map("created_at")
 
-  software Software @relation(fields: [softwareId], references: [id])
-  user     Profile  @relation(fields: [userId], references: [id])
+  software Software  @relation(fields: [softwareId], references: [id])
+  user     Profile   @relation(fields: [userId], references: [id])
   hardware Hardware? @relation(fields: [hardwareId], references: [id])
 
   @@unique([softwareId, userId])
+  @@index([hardwareId])
+  @@index([createdAt])
   @@map("ratings")
 }
 
 model Submission {
-  id          String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type        SubmissionType
-  submittedBy String @db.Uuid @map("submitted_by")
+  submittedBy String           @map("submitted_by") @db.Uuid
   status      SubmissionStatus @default(PENDING)
   payload     Json
-  targetId    String? @db.Uuid @map("target_id")
-  reviewedBy  String? @db.Uuid @map("reviewed_by")
-  reviewedAt  DateTime? @map("reviewed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  targetId    String?          @map("target_id") @db.Uuid
+  reviewedBy  String?          @map("reviewed_by") @db.Uuid
+  reviewedAt  DateTime?        @map("reviewed_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
 
   submitter Profile @relation(fields: [submittedBy], references: [id])
 
+  @@index([status, type, createdAt])
+  @@index([submittedBy, status])
   @@map("submissions")
 }
 
 model Report {
-  id             String            @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  reporterId     String            @db.Uuid @map("reporter_id")
-  targetType     ReportTargetType  @map("target_type")
-  targetId       String?           @db.Uuid @map("target_id")
-  reportedUserId String?           @db.Uuid @map("reported_user_id")
-  credibilityWeight Float           @default(1.0) @map("credibility_weight")
-  comment        String?
-  status         ReportStatus      @default(PENDING)
-  upheldAt       DateTime?         @map("upheld_at")
-  reviewedBy     String?           @db.Uuid @map("reviewed_by")
-  reviewedAt     DateTime?         @map("reviewed_at")
-  createdAt      DateTime          @default(now()) @map("created_at")
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporterId        String           @map("reporter_id") @db.Uuid
+  targetType        ReportTargetType @map("target_type")
+  targetId          String?          @map("target_id") @db.Uuid
+  reportedUserId    String?          @map("reported_user_id") @db.Uuid
+  credibilityWeight Float            @default(1.0) @map("credibility_weight")
+  comment           String?
+  status            ReportStatus     @default(PENDING)
+  upheldAt          DateTime?        @map("upheld_at")
+  reviewedBy        String?          @map("reviewed_by") @db.Uuid
+  reviewedAt        DateTime?        @map("reviewed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
 
-  reporter       Profile @relation("reports_reporter", fields: [reporterId], references: [id])
-  targetUser     Profile? @relation("reports_target", fields: [reportedUserId], references: [id])
+  reporter   Profile  @relation("reports_reporter", fields: [reporterId], references: [id])
+  targetUser Profile? @relation("reports_target", fields: [reportedUserId], references: [id])
 
+  @@index([status, targetType, createdAt])
+  @@index([reporterId])
+  @@index([reportedUserId])
   @@map("reports")
 }
 
 model UserList {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ownerId     String   @db.Uuid @map("owner_id")
+  ownerId     String   @map("owner_id") @db.Uuid
   name        String
   description String?
   isPublic    Boolean  @default(false) @map("is_public")
-  clonedFrom  String?  @db.Uuid @map("cloned_from")
+  clonedFrom  String?  @map("cloned_from") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @map("updated_at")
 
@@ -313,32 +333,38 @@ model UserList {
   entries        UserListEntry[]
   saves          UserListSave[]
 
+  @@index([isPublic, createdAt])
+  @@index([ownerId, createdAt])
   @@map("UserList")
 }
 
 model UserListEntry {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  listId     String    @db.Uuid @map("list_id")
-  softwareId String    @db.Uuid @map("software_id")
-  hardwareId String?   @db.Uuid @map("hardware_id")
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listId     String  @map("list_id") @db.Uuid
+  softwareId String  @map("software_id") @db.Uuid
+  hardwareId String? @map("hardware_id") @db.Uuid
   notes      String?
-  sortOrder  Int       @default(0) @map("sort_order")
+  sortOrder  Int     @default(0) @map("sort_order")
 
-  list       UserList  @relation(fields: [listId], references: [id], onDelete: Cascade)
-  software   Software  @relation(fields: [softwareId], references: [id], onDelete: Cascade)
-  hardware   Hardware? @relation(fields: [hardwareId], references: [id], onDelete: SetNull)
+  list     UserList  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  software Software  @relation(fields: [softwareId], references: [id], onDelete: Cascade)
+  hardware Hardware? @relation(fields: [hardwareId], references: [id], onDelete: SetNull)
 
+  @@index([listId, sortOrder])
+  @@index([softwareId])
+  @@index([hardwareId])
   @@map("UserListEntry")
 }
 
 model UserListSave {
-  userId  String   @db.Uuid @map("user_id")
-  listId  String   @db.Uuid @map("list_id")
+  userId  String   @map("user_id") @db.Uuid
+  listId  String   @map("list_id") @db.Uuid
   savedAt DateTime @default(now()) @map("saved_at")
 
-  user    Profile  @relation("saved_lists", fields: [userId], references: [id], onDelete: Cascade)
-  list    UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user Profile  @relation("saved_lists", fields: [userId], references: [id], onDelete: Cascade)
+  list UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   @@id([userId, listId])
+  @@index([listId])
   @@map("UserListSave")
 }

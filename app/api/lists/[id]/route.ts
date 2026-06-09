@@ -20,6 +20,7 @@ export async function GET(
       updatedAt: true,
       _count: { select: { saves: true, clones: true } },
       entries: {
+        where: { software: { approved: true } },
         select: {
           id: true,
           notes: true,
@@ -38,8 +39,24 @@ export async function GET(
     return NextResponse.json({ error: "List not found" }, { status: 404 });
   }
 
-  const { ownerId: _ownerId, isPublic: _isPublic, _count, ...rest } = list;
-  return NextResponse.json({ ...rest, saveCount: _count.saves, cloneCount: _count.clones });
+  const viewerSave = sessionUser && list.ownerId !== sessionUser.id
+    ? await prisma.userListSave.findUnique({
+        where: { userId_listId: { userId: sessionUser.id, listId: id } },
+        select: { listId: true },
+      })
+    : null;
+
+  return NextResponse.json({
+    id: list.id,
+    name: list.name,
+    description: list.description,
+    createdAt: list.createdAt,
+    updatedAt: list.updatedAt,
+    entries: list.entries,
+    saveCount: list._count.saves,
+    cloneCount: list._count.clones,
+    viewerHasSaved: Boolean(viewerSave),
+  });
 }
 
 export async function PATCH(

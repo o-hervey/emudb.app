@@ -1,5 +1,6 @@
 import { getSessionUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { Category, Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -26,13 +27,13 @@ export async function GET(req: NextRequest) {
     and.push({ entries: { some: { software: { category: category as Category, approved: true } } } });
   }
   if (platformId) {
-    and.push({ entries: { some: { software: { platforms: { some: { platformId } } } } } });
+    and.push({ entries: { some: { software: { approved: true, platforms: { some: { platformId } } } } } });
   }
   if (hardwareId) {
-    and.push({ entries: { some: { hardwareId } } });
+    and.push({ entries: { some: { hardwareId, software: { approved: true } } } });
   }
   if (systemId) {
-    and.push({ entries: { some: { software: { systems: { some: { systemId } } } } } });
+    and.push({ entries: { some: { software: { approved: true, systems: { some: { systemId } } } } } });
   }
   if (search) {
     and.push({
@@ -61,7 +62,13 @@ export async function GET(req: NextRequest) {
         name: true,
         description: true,
         createdAt: true,
-        _count: { select: { entries: true, saves: true, clones: true } },
+        _count: {
+          select: {
+            entries: { where: { software: { approved: true } } },
+            saves: true,
+            clones: true,
+          },
+        },
       },
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
@@ -83,6 +90,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "lists:create", max: 30, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

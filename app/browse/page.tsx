@@ -79,6 +79,9 @@ function BrowseContent() {
   const hardware  = searchParams.getAll('hardware');
   const systems   = searchParams.getAll('system');
   const page      = parseInt(searchParams.get('page') ?? '1', 10);
+  const platformKey = platforms.join(',');
+  const hardwareKey = hardware.join(',');
+  const systemKey   = systems.join(',');
 
   function set(key: string, value: string) {
     const p = new URLSearchParams(searchParams.toString());
@@ -108,20 +111,24 @@ function BrowseContent() {
     if (q)       p.set('q', q);
     if (category) p.set('category', category);
     if (sort)    p.set('sort', sort);
-    for (const id of platforms) p.append('platform', id);
-    for (const id of hardware)  p.append('hardware', id);
-    for (const id of systems)   p.append('system', id);
+    for (const id of platformKey ? platformKey.split(',') : []) p.append('platform', id);
+    for (const id of hardwareKey ? hardwareKey.split(',') : [])  p.append('hardware', id);
+    for (const id of systemKey ? systemKey.split(',') : [])      p.append('system', id);
     p.set('page', String(page));
 
     fetch(`/api/software?${p.toString()}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load results.');
+        return json as PaginatedResponse<SoftwareListing>;
+      })
       .then((json: PaginatedResponse<SoftwareListing>) => {
         setResults(json.data ?? []);
-        setMeta(json.meta);
+        setMeta(json.meta ?? { page: 1, totalPages: 1, total: 0 });
       })
-      .catch(() => setError('Failed to load results.'))
+      .catch((err: Error) => setError(err.message || 'Failed to load results.'))
       .finally(() => setLoading(false));
-  }, [q, category, sort, platforms.join(','), hardware.join(','), systems.join(','), page]);
+  }, [q, category, sort, platformKey, hardwareKey, systemKey, page]);
 
   const platformOptions = (filters?.platforms ?? []).map((p) => ({ id: p.id, name: p.name }));
   const hardwareOptions = (filters?.hardware ?? []).map((h) => ({ id: h.id, name: h.name }));

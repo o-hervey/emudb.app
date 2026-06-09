@@ -134,12 +134,16 @@ function ListsContent() {
     p.set('page', String(page));
 
     fetch(`/api/lists?${p.toString()}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load lists.');
+        return json;
+      })
       .then((json) => {
         setResults(json.data ?? []);
-        setMeta(json.meta);
+        setMeta(json.meta ?? { page: 1, totalPages: 1, total: 0 });
       })
-      .catch(() => setError('Failed to load lists.'))
+      .catch((err: Error) => setError(err.message || 'Failed to load lists.'))
       .finally(() => setLoading(false));
   }, [q, category, platform, hardware, system, sort, page]);
 

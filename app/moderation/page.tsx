@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const TABS = [
   { value: '',             label: 'All' },
@@ -92,7 +92,7 @@ export default function ModerationPage() {
     if (!authLoading && (!user || (!user.isModerator && !user.isSuperAdmin))) router.push('/');
   }, [authLoading, user, router]);
 
-  const fetchSubmissions = () => {
+  const fetchSubmissions = useCallback(() => {
     setLoading(true);
     setError('');
     const p = new URLSearchParams({ page: String(page) });
@@ -109,9 +109,11 @@ export default function ModerationPage() {
       })
       .catch((err: Error) => setError(err.message || 'Failed to load submissions.'))
       .finally(() => setLoading(false));
-  };
+  }, [activeTab, page]);
 
-  useEffect(() => { if (user?.isModerator || user?.isSuperAdmin) fetchSubmissions(); }, [user, activeTab, page]);
+  useEffect(() => {
+    if (user?.isModerator || user?.isSuperAdmin) fetchSubmissions();
+  }, [user?.isModerator, user?.isSuperAdmin, fetchSubmissions]);
 
   async function action(id: string, verb: 'approve' | 'reject') {
     setActioning(id);

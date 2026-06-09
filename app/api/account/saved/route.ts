@@ -7,7 +7,7 @@ export async function GET() {
   if (!user) return unauthorized();
 
   const saves = await prisma.userListSave.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, list: { isPublic: true } },
     select: {
       savedAt: true,
       list: {

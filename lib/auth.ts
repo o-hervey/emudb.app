@@ -7,6 +7,14 @@ export async function getSessionUser() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: { isActive: true },
+  });
+  if (profile && !profile.isActive) return null;
+
   return user;
 }
 

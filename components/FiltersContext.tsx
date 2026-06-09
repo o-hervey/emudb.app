@@ -16,7 +16,11 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetch('/api/filters')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? 'Failed to load filters.');
+        return json;
+      })
       .then(setFilters)
       .catch(() => {})
       .finally(() => setLoading(false));

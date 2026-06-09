@@ -1,5 +1,6 @@
 import { getSessionUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { Category, HardwareType, Prisma, SoftwareStatus, SubmissionType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -43,6 +44,9 @@ function isAllowedUrl(val: unknown): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "submissions:create", max: 20, windowMs: 60 * 60 * 1000 });
+  if (limited) return limited;
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
