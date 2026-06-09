@@ -9,7 +9,16 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "EmuDB — Emulation Software Directory",
-  description: "A community-driven, filterable directory of emulation software.",
+  description:
+    "EmuDB is a community-driven directory of emulation software — browse and compare emulators, frontends, compatibility layers, ROM managers, media scrapers, and more across 13 categories, 89+ gaming systems, and 171+ hardware devices.",
+  openGraph: {
+    title: "EmuDB — Emulation Software Directory",
+    description:
+      "Browse and compare emulators, frontends, compatibility layers, ROM managers, and more. Community ratings, platform filters, and compatibility data for 89+ gaming systems.",
+    url: "https://emudb.app",
+    siteName: "EmuDB",
+    type: "website",
+  },
 };
 
 // Runs before React hydration to apply the saved theme without a flash.

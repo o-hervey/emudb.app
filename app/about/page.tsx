@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'About — EmuDB',
+  description:
+    'EmuDB is a community-driven directory of emulation software. Learn about the project, how to contribute listings, and the team behind the site.',
+  openGraph: {
+    title: 'About EmuDB',
+    description:
+      'A community-driven directory of emulation software — learn about the project and how to contribute.',
+    url: 'https://emudb.app/about',
+    siteName: 'EmuDB',
+  },
+};
 
 export default function AboutPage() {
   return (

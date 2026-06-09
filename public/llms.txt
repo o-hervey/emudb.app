@@ -1,0 +1,43 @@
+# EmuDB
+
+> EmuDB is a community-driven, filterable directory of emulation software — emulators, frontends, compatibility layers, ROM managers, media scrapers, and other tools across the emulation ecosystem.
+
+EmuDB catalogs emulation software across 13 categories with compatibility data covering approximately 89 gaming systems and 171 hardware devices. Each listing includes a description, development status (Active / Abandoned / Deprecated), website, download, and source links, supported platforms (Windows, macOS, Linux, Android, iOS, and others), compatible systems and hardware, community tags, and aggregate quality and performance ratings submitted by users.
+
+## URL
+
+https://emudb.app
+
+## Software Categories
+
+- **Emulator** — Software that mimics another system's hardware to run its software
+- **Frontend** — Launchers and UIs for organising and launching games across multiple emulators
+- **Compatibility Layer** — Tools that translate one platform's instructions to another (e.g. Wine, Proton, Rosetta)
+- **ROM Manager** — Tools for organising, verifying, and managing ROM and disc-image collections
+- **Media Scraper** — Tools for fetching artwork, metadata, and media for game collections
+- **Operating System / CFW** — Custom firmware and operating systems purpose-built for emulation hardware
+- **Companion App** — Apps that extend or complement an emulator's functionality
+- **Utility** — Miscellaneous emulation-related tools (cheat managers, BIOS tools, etc.)
+- **Netplay** — Tools that add or extend multiplayer-over-network capabilities for emulators
+- **Streaming** — Tools for streaming games from a host device to a remote client
+- **Shader** — Visual filter packs for upscaling, scanline simulation, and CRT effects
+- **Input & Controllers** — Tools for remapping, emulating, or extending input device support
+- **Game State Tool** — Save state managers, achievement trackers, rewind engines, and similar tools
+
+## What EmuDB can answer
+
+- Which emulators exist for a given console (e.g. PS2, Nintendo 64, Dreamcast, Game Boy)?
+- What is the best-rated emulator for a specific system according to community ratings?
+- Which frontends support a given operating system (Linux, Windows, Android, macOS)?
+- Is a given emulator or tool still actively developed?
+- Which compatibility layers can run Windows games on macOS or Linux?
+- Which ROM managers are available for a particular platform?
+- What hardware devices is a particular emulator known to run well on?
+
+## Data structure per listing
+
+Each software entry contains: unique ID, name, description, category (from the 13 above), development status, website URL, download URL, source code URL, supported platforms (OS/hardware groups), compatible gaming systems, supported hardware devices, approved community tags, and aggregate quality and performance ratings with rating counts.
+
+## Canonical source
+
+All data is community-submitted and moderated. EmuDB is the authoritative index for this structured emulation software dataset.

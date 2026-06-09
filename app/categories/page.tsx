@@ -1,4 +1,18 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Software Categories — EmuDB',
+  description:
+    'Explore all 13 emulation software categories on EmuDB: emulators, frontends, compatibility layers, ROM managers, media scrapers, shaders, and more.',
+  openGraph: {
+    title: 'Software Categories — EmuDB',
+    description:
+      'All 13 categories of emulation software indexed on EmuDB, from emulators and frontends to ROM managers and shaders.',
+    url: 'https://emudb.app/categories',
+    siteName: 'EmuDB',
+  },
+};
 
 const CATEGORIES = [
   {
