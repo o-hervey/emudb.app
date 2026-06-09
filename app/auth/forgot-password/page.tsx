@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createClient();
       const { error: sbError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://www.emudb.app/auth/reset-password',
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       if (sbError) { setError(sbError.message); return; }
       setSent(true);
