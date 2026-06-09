@@ -115,15 +115,16 @@ export default function AccountSettingsPage() {
     setIdentityError('');
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.getUser();
+      const res = await fetch('/api/account/identities');
 
-      if (error) {
-        setIdentityError(error.message);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setIdentityError(data?.error ?? 'Failed to load connected accounts.');
         return;
       }
 
-      setIdentities(data.user?.identities ?? []);
+      const data = await res.json();
+      setIdentities(data.identities ?? []);
     } catch {
       setIdentityError('Failed to load connected accounts.');
     } finally {
