@@ -2,20 +2,19 @@ import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const [softwareCount, systemCount, hardwareCount, platformCount, tagCount] =
+  const [softwareCount, systemCount, hardwareCount, platformCount] =
     await Promise.all([
       prisma.software.count({ where: { approved: true } }),
       prisma.system.count(),
       prisma.hardware.count(),
       prisma.platform.count(),
-      prisma.tag.count({ where: { approved: true } }),
     ]);
 
   const body = `# EmuDB
 
 > EmuDB is a community-driven, filterable directory of emulation software — emulators, frontends, compatibility layers, ROM managers, media scrapers, and other tools across the emulation ecosystem.
 
-EmuDB catalogs ${softwareCount} emulation software entries across 13 categories with compatibility data covering ${systemCount} gaming systems, ${hardwareCount} hardware devices, and ${platformCount} platforms. Each listing includes a description, development status (Active / Abandoned / Deprecated), website, download, and source links, supported platforms (Windows, macOS, Linux, Android, iOS, and others), compatible systems and hardware, ${tagCount} community tags, and aggregate quality and performance ratings submitted by users.
+EmuDB catalogs ${softwareCount} emulation software entries across 13 categories with compatibility data covering ${systemCount} gaming systems, ${hardwareCount} hardware devices, and ${platformCount} platforms. Each listing includes a description, development status (Active / Abandoned / Deprecated), website, download, and source links, supported platforms (Windows, macOS, Linux, Android, iOS, and others), compatible systems and hardware, and aggregate quality and performance ratings submitted by users.
 
 ## URL
 
@@ -54,6 +53,10 @@ Each software entry contains: unique ID, name, description, category (from the 1
 ## Canonical source
 
 All data is community-submitted and moderated. EmuDB is the authoritative index for this structured emulation software dataset.
+
+## Machine-readable index
+
+https://emudb.app/api/llms-index — full plain-text index of all ${softwareCount} listings
 `;
 
   return new NextResponse(body, {

@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /api/llms-index
 Disallow: /api/
 Disallow: /admin/
 Disallow: /moderation/
