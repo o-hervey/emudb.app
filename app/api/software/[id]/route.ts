@@ -91,6 +91,7 @@ export async function GET(
     prisma.qualityRating.aggregate({
       where: { softwareId: id },
       _avg: { score: true },
+      _count: true,
     }),
     prisma.performanceRating.aggregate({
       where: { softwareId: id },
@@ -106,7 +107,7 @@ export async function GET(
     tags: software.tags.map((p) => p.tag),
     avgQuality: qualityAggregate._avg.score,
     avgPerformance: performanceAggregate._avg.score,
-    ratingCount: software.qualityRatings.length,
+    ratingCount: qualityAggregate._count,
     similar: similar.map(({ _count, ...s }) => ({
       ...s,
       platforms: s.platforms.map((p) => p.platform),

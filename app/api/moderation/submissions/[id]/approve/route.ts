@@ -1,4 +1,4 @@
-import { requireModerator } from "@/lib/auth";
+import { forbidden, requireModerator } from "@/lib/auth";
 import { pingIndexNow } from "@/lib/indexnow";
 import { prisma } from "@/lib/prisma";
 import { Category, HardwareType, Prisma, SoftwareStatus } from "@prisma/client";
@@ -64,6 +64,9 @@ export async function POST(
   }
   if (submission.status !== "PENDING") {
     return NextResponse.json({ error: "Submission is not pending" }, { status: 409 });
+  }
+  if (submission.submittedBy === user!.id) {
+    return forbidden();
   }
 
   const payload = submission.payload as Record<string, unknown>;

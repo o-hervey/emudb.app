@@ -59,22 +59,30 @@ export async function POST(
     return NextResponse.json({ error: "notes must be 1000 characters or fewer" }, { status: 400 });
   }
 
-  const entry = await prisma.userListEntry.create({
-    data: {
-      listId,
-      softwareId,
-      hardwareId: normalizedHardwareId,
-      notes: trimmedNotes,
-      sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
-    },
-    select: {
-      id: true,
-      notes: true,
-      sortOrder: true,
-      software: { select: { id: true, name: true, category: true, status: true } },
-      hardware: { select: { id: true, name: true, type: true } },
-    },
-  });
+  let entry;
+  try {
+    entry = await prisma.userListEntry.create({
+      data: {
+        listId,
+        softwareId,
+        hardwareId: normalizedHardwareId,
+        notes: trimmedNotes,
+        sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
+      },
+      select: {
+        id: true,
+        notes: true,
+        sortOrder: true,
+        software: { select: { id: true, name: true, category: true, status: true } },
+        hardware: { select: { id: true, name: true, type: true } },
+      },
+    });
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === "P2002") {
+      return NextResponse.json({ error: "This item is already in the list." }, { status: 409 });
+    }
+    throw err;
+  }
 
   return NextResponse.json(entry, { status: 201 });
 }

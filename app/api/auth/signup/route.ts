@@ -54,6 +54,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (data.user) {
+    if (data.user.identities?.length === 0) {
+      return NextResponse.json({ error: "An account with that email already exists." }, { status: 400 });
+    }
+
     try {
       await prisma.profile.upsert({
         where: { id: data.user.id },
