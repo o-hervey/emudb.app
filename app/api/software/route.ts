@@ -11,10 +11,10 @@ export async function GET(req: NextRequest) {
   const sort = params.get("sort");
   const category = params.get("category");
   const status = params.get("status");
-  const platformIds = params.getAll("platform");
-  const hardwareIds = params.getAll("hardware");
-  const systemIds = params.getAll("system");
-  const tagIds = params.getAll("tag");
+  const platformIds = params.getAll("platform").slice(0, 20);
+  const hardwareIds = params.getAll("hardware").slice(0, 20);
+  const systemIds = params.getAll("system").slice(0, 20);
+  const tagIds = params.getAll("tag").slice(0, 20);
   const search = params.get("q")?.trim();
 
   if (category && !Object.values(Category).includes(category as Category)) {

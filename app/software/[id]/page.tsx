@@ -99,6 +99,7 @@ export default async function SoftwareDetailPage({ params }: { params: Promise<{
     prisma.qualityRating.aggregate({
       where: { softwareId: id },
       _avg: { score: true },
+      _count: true,
     }),
     prisma.performanceRating.aggregate({
       where: { softwareId: id },
@@ -123,7 +124,7 @@ export default async function SoftwareDetailPage({ params }: { params: Promise<{
     tags: raw.tags.map((t) => t.tag),
     avgQuality: qualityAggregate._avg.score,
     avgPerformance: performanceAggregate._avg.score,
-    ratingCount: raw.qualityRatings.length,
+    ratingCount: qualityAggregate._count,
     qualityRatings: raw.qualityRatings.map((r) => ({
       id: r.id,
       score: r.score,

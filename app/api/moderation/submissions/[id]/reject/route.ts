@@ -1,4 +1,4 @@
-import { requireModerator } from "@/lib/auth";
+import { forbidden, requireModerator } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function POST(
 
   const submission = await prisma.submission.findUnique({
     where: { id },
-    select: { id: true, status: true },
+    select: { id: true, status: true, submittedBy: true },
   });
 
   if (!submission) {
@@ -21,6 +21,9 @@ export async function POST(
   }
   if (submission.status !== "PENDING") {
     return NextResponse.json({ error: "Submission is not pending" }, { status: 409 });
+  }
+  if (submission.submittedBy === user!.id) {
+    return forbidden();
   }
 
   await prisma.submission.update({

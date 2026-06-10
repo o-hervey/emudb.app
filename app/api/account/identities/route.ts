@@ -1,21 +1,11 @@
-import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+import { getSessionUser, unauthorized } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error || !data.user) {
-    return NextResponse.json(
-      { error: error?.message ?? 'Not authenticated' },
-      { status: 401 }
-    );
-  }
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
 
   return NextResponse.json({
-    identities: data.user.identities ?? [],
+    identities: user.identities ?? [],
   });
 }

@@ -357,9 +357,16 @@ async function handleNewTag(userId: string, body: Record<string, unknown>) {
       return NextResponse.json({ error: "Tag already applied to this listing" }, { status: 409 });
     }
 
-    await prisma.softwareTag.create({
-      data: { softwareId, tagId: existingTag.id, approved: true },
-    });
+    try {
+      await prisma.softwareTag.create({
+        data: { softwareId, tagId: existingTag.id, approved: true },
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "P2002") {
+        return NextResponse.json({ error: "Tag already applied to this listing" }, { status: 409 });
+      }
+      throw err;
+    }
 
     return NextResponse.json({ applied: true, tagId: existingTag.id, tagName: existingTag.name });
   }

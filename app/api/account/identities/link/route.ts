@@ -1,3 +1,4 @@
+import { getSessionUser, unauthorized } from '@/lib/auth';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,17 +16,11 @@ export async function POST(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/account/settings')}`;
 
+  const user = await getSessionUser();
+  if (!user) return unauthorized();
+
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-
-  if (userError || !userData.user) {
-    return NextResponse.json(
-      { error: userError?.message ?? 'Not authenticated' },
-      { status: 401 }
-    );
-  }
 
   const { data, error } = await supabase.auth.linkIdentity({
     provider: provider as 'github' | 'discord',
