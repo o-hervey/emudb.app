@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/utils/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -75,7 +75,28 @@ export async function GET(req: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+
+  // Build the success redirect first so we can set cookies directly on it.
+  // This is more reliable than relying on Next.js applying cookies().set()
+  // mutations to a separately-constructed NextResponse.
+  const successResponse = NextResponse.redirect(new URL(next, requestUrl.origin));
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            successResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -97,5 +118,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL(next, requestUrl.origin));
+  return successResponse;
 }
