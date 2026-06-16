@@ -27,17 +27,26 @@ export function forbidden() {
 }
 
 // Requires the user to have at least one approved submission (contributor gate for tag review).
+// Moderators and superadmins bypass this gate.
 export async function requireContributor() {
   const user = await getSessionUser();
-  if (!user) return { user: null, error: unauthorized() };
+  if (!user) return { user: null, profile: null, error: unauthorized() };
 
-  const approvedCount = await prisma.submission.count({
-    where: { submittedBy: user.id, status: "APPROVED" },
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    select: { id: true, isModerator: true, isSuperAdmin: true },
   });
 
-  if (approvedCount === 0) return { user, error: forbidden() };
+  if (!profile) return { user, profile: null, error: profileMissing() };
 
-  return { user, error: null };
+  if (!profile.isModerator && !profile.isSuperAdmin) {
+    const approvedCount = await prisma.submission.count({
+      where: { submittedBy: user.id, status: "APPROVED" },
+    });
+    if (approvedCount === 0) return { user, profile, error: forbidden() };
+  }
+
+  return { user, profile, error: null };
 }
 
 export function profileMissing() {

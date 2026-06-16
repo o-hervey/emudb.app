@@ -10,7 +10,7 @@ export async function POST(
   const limited = await rateLimit(req, { key: "tags:review", max: 60, windowMs: 60 * 60 * 1000 });
   if (limited) return limited;
 
-  const { user, error } = await requireContributor();
+  const { user, profile, error } = await requireContributor();
   if (error) return error;
 
   const { id } = await params;
@@ -40,11 +40,8 @@ export async function POST(
     return NextResponse.json({ error: "Submission does not match this tag" }, { status: 400 });
   }
 
-  if (submission.submittedBy === user!.id) {
-    const profile = await prisma.profile.findUnique({ where: { id: user!.id }, select: { isSuperAdmin: true } });
-    if (!profile?.isSuperAdmin) {
-      return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
-    }
+  if (submission.submittedBy === user!.id && !profile?.isSuperAdmin) {
+    return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
   }
 
   const tag = await prisma.tag.findUnique({
