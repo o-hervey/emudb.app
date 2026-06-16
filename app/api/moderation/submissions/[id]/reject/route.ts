@@ -6,7 +6,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error } = await requireModerator();
+  const { user, profile, error } = await requireModerator();
   if (error) return error;
 
   const { id } = await params;
@@ -22,7 +22,7 @@ export async function POST(
   if (submission.status !== "PENDING") {
     return NextResponse.json({ error: "Submission is not pending" }, { status: 409 });
   }
-  if (submission.submittedBy === user!.id) {
+  if (submission.submittedBy === user!.id && !profile?.isSuperAdmin) {
     return forbidden();
   }
 
