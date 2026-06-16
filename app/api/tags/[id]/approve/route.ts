@@ -41,7 +41,10 @@ export async function POST(
   }
 
   if (submission.submittedBy === user!.id) {
-    return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
+    const profile = await prisma.profile.findUnique({ where: { id: user!.id }, select: { isSuperAdmin: true } });
+    if (!profile?.isSuperAdmin) {
+      return NextResponse.json({ error: "You cannot review your own submitted tag" }, { status: 403 });
+    }
   }
 
   const tag = await prisma.tag.findUnique({

@@ -95,7 +95,7 @@ export default function TagReviewPage() {
       ) : (
         <div className="space-y-3">
           {tags.map((tag) => {
-            const isOwn = tag.submittedByProfile?.id === user.id;
+            const isOwn = tag.submittedByProfile?.id === user.id && !user.isSuperAdmin;
             return (
               <div key={tag.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                 <div className="flex items-start justify-between gap-4">
