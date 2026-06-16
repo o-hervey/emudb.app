@@ -62,6 +62,7 @@ export async function requireModerator() {
     select: { id: true, isModerator: true, isSuperAdmin: true },
   });
 
+  console.log("[requireModerator] userId:", user.id, "profile:", JSON.stringify(profile));
   if (!profile) return { user, profile: null, error: profileMissing() };
   if (!profile.isModerator && !profile.isSuperAdmin) return { user, profile, error: forbidden() };
 
